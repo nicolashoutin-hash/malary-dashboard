@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowAlert — Dashboard Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#141619;--bg4:#1c1f24;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--text:#e8eaf0;--text2:#8892a4;--text3:#454d5c;--or:#C9A84C;--or2:#E8C97A;--or-bg:rgba(201,168,76,0.08);--or-border:rgba(201,168,76,0.2);--green:#34d399;--green-bg:rgba(52,211,153,0.08);--red:#f87171;--red-bg:rgba(248,113,113,0.08);--blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);--amber:#fbbf24;--amber-bg:rgba(251,191,36,0.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.logo-badge{width:28px;height:28px;border-radius:6px;background:var(--or);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#07080a;}
+.page-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:99px;background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,0.2);font-family:'DM Mono',monospace;}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.fb-badge{font-size:10px;padding:3px 9px;border-radius:99px;font-family:'DM Mono',monospace;background:var(--or-bg);color:var(--or);border:1px solid var(--or-border);}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.topbar-btn:hover{border-color:var(--or);color:var(--or);}
+.topbar-btn.primary{background:var(--or);color:#07080a;border-color:var(--or);font-weight:500;}
+.clock{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);}
+.app-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+.sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar-logo{padding:14px 16px;border-bottom:1px solid var(--border);}
+.logo-row{display:flex;align-items:center;gap:8px;}
+.logo-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;}
+.logo-sub{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;}
+.sidebar-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;}
+.nav-sec{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:8px 6px 4px;font-family:'DM Mono',monospace;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;cursor:pointer;color:var(--text2);font-size:11px;transition:all .15s;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--or-bg);color:var(--or);border:1px solid var(--or-border);}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:600;padding:1px 5px;border-radius:99px;}
+.sidebar-bottom{padding:10px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;background:var(--bg3);}
+.user-avatar{width:26px;height:26px;border-radius:5px;background:var(--or-bg);border:1px solid var(--or-border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--or);font-weight:600;}
+.user-name{font-size:10px;font-weight:500;}
+.user-role{font-size:9px;color:var(--text3);}
+.dashboard{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.content{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.metrics-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;position:relative;overflow:hidden;}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent,var(--or)),transparent);opacity:.6;}
+.metric-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'DM Mono',monospace;}
+.metric-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:600;letter-spacing:-0.5px;line-height:1;}
+.metric-sub{font-size:9px;margin-top:4px;color:var(--text3);}
+.main-grid{display:grid;grid-template-columns:1fr 1fr 260px;gap:10px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:500;font-family:'Syne',sans-serif;}
+.card-sub{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;}
+.map-area{height:200px;background:var(--bg3);position:relative;overflow:hidden;}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:28px 28px;}
+.map-agent{position:absolute;width:9px;height:9px;border-radius:50%;border:2px solid currentColor;cursor:pointer;transition:all .3s;}
+.map-agent:hover{transform:scale(1.8);}
+.map-agent.actif{color:var(--green);background:var(--green-bg);}
+.map-agent.alerte{color:var(--amber);background:var(--amber-bg);animation:pulse 1.5s infinite;}
+.map-agent.incident{color:var(--red);background:var(--red-bg);animation:pulse .8s infinite;}
+.map-agent.inactif{color:var(--text3);background:var(--bg4);}
+.map-legend{display:flex;align-items:center;gap:10px;padding:6px 12px;border-top:1px solid var(--border);}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);}
+.legend-dot{width:5px;height:5px;border-radius:50%;}
+.map-tooltip{position:absolute;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;padding:5px 9px;font-size:10px;color:var(--text);white-space:nowrap;pointer-events:none;display:none;z-index:10;}
+.incident-list{max-height:220px;overflow-y:auto;}
+.incident-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.incident-item:hover{background:var(--bg3);}
+.incident-icon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.incident-body{flex:1;min-width:0;}
+.incident-title{font-size:10px;font-weight:500;margin-bottom:2px;}
+.incident-meta{font-size:9px;color:var(--text3);display:flex;gap:6px;}
+.badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:500;}
+.badge.critique{background:var(--red-bg);color:var(--red);}
+.badge.moyen{background:var(--amber-bg);color:var(--amber);}
+.badge.info{background:var(--blue-bg);color:var(--blue);}
+.badge.resolu{background:var(--green-bg);color:var(--green);}
+.agent-list{overflow-y:auto;max-height:440px;}
+.agent-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.agent-item:hover{background:var(--bg3);}
+.agent-av{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;font-family:'Syne',sans-serif;flex-shrink:0;border:2px solid transparent;}
+.agent-av.actif{background:var(--green-bg);color:var(--green);border-color:rgba(52,211,153,.3);}
+.agent-av.alerte{background:var(--amber-bg);color:var(--amber);border-color:rgba(251,191,36,.3);}
+.agent-av.incident{background:var(--red-bg);color:var(--red);border-color:rgba(248,113,113,.3);}
+.agent-av.inactif{background:var(--bg4);color:var(--text3);}
+.agent-info{flex:1;min-width:0;}
+.agent-name{font-size:10px;font-weight:500;}
+.agent-zone{font-size:9px;color:var(--text3);}
+.agent-pill{font-size:9px;padding:1px 6px;border-radius:99px;}
+.agent-pill.actif{background:var(--green-bg);color:var(--green);}
+.agent-pill.alerte{background:var(--amber-bg);color:var(--amber);}
+.agent-pill.incident{background:var(--red-bg);color:var(--red);}
+.agent-pill.inactif{background:var(--bg4);color:var(--text3);}
+.agent-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);margin-top:1px;}
+.analytics-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:var(--text3);font-size:10px;gap:6px;text-align:center;}
+.empty-state .ico{font-size:24px;opacity:.3;}
+.chat-panel{width:270px;border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;flex-shrink:0;}
+.chat-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);}
+.chat-panel-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;}
+.chat-tabs{display:flex;gap:3px;padding:7px 8px;border-bottom:1px solid var(--border);}
+.chat-tab{flex:1;padding:4px;border-radius:5px;border:none;background:transparent;color:var(--text3);font-size:9px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+.chat-tab.active{background:var(--or-bg);color:var(--or);}
+.chat-conv-list{border-bottom:1px solid var(--border);overflow-y:auto;max-height:120px;}
+.chat-conv-item{display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;transition:background .15s;font-size:10px;}
+.chat-conv-item:hover{background:var(--bg3);}
+.chat-conv-item.active{background:var(--or-bg);border-left:2px solid var(--or);}
+.chat-conv-av{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0;background:var(--bg4);color:var(--text2);}
+.chat-messages{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;}
+.chat-msg{padding:5px 8px;border-radius:6px;font-size:10px;line-height:1.5;max-width:92%;}
+.chat-msg.mine{background:var(--or-bg);border:1px solid var(--or-border);align-self:flex-end;}
+.chat-msg.other{background:var(--bg3);border:1px solid var(--border);align-self:flex-start;}
+.chat-msg.urgent{background:var(--red-bg);border:1px solid rgba(248,113,113,.3);color:var(--red);align-self:flex-start;}
+.chat-msg.system{background:transparent;border:1px solid var(--border);color:var(--text3);font-size:9px;text-align:center;align-self:center;}
+.chat-msg-sender{font-size:8px;color:var(--or);font-family:'DM Mono',monospace;margin-bottom:1px;}
+.chat-msg-time{font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;text-align:right;}
+.chat-input-area{padding:8px 10px;border-top:1px solid var(--border);}
+.chat-conv-lbl{font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:4px;}
+.chat-input-row{display:flex;gap:5px;align-items:center;}
+.chat-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:10px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;}
+.chat-input:focus{border-color:var(--or);}
+.chat-input::placeholder{color:var(--text3);}
+.chat-send-btn{width:26px;height:26px;border-radius:5px;border:none;background:var(--or);color:#07080a;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chat-urgent-btn{width:26px;height:26px;border-radius:5px;border:1px solid rgba(248,113,113,.3);background:var(--red-bg);color:var(--red);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:6px;color:var(--text3);font-size:10px;text-align:center;padding:16px;}
+.call-overlay{position:fixed;inset:0;background:rgba(7,8,10,.95);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;}
+.call-overlay.active{display:flex;}
+.call-av{width:64px;height:64px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:'Syne',sans-serif;background:var(--or-bg);border:2px solid var(--or);color:var(--or);}
+.call-nom{font-family:'Syne',sans-serif;font-size:18px;font-weight:600;}
+.call-stat{font-size:11px;color:var(--text3);}
+.call-dur{font-family:'DM Mono',monospace;font-size:16px;color:var(--or);}
+.call-btns{display:flex;gap:14px;}
+.call-btn{width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.call-btn.end{background:var(--red);color:#fff;}
+.call-btn.mute{background:var(--bg4);color:var(--text2);border:1px solid var(--border2);}
+.call-ring{width:90px;height:90px;border-radius:50%;border:2px solid var(--or);position:absolute;animation:ringA 2s infinite;opacity:0;}
+@keyframes ringA{0%{transform:scale(.8);opacity:.6}100%{transform:scale(1.5);opacity:0}}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg4);border:1px solid var(--or-border);border-radius:7px;padding:9px 14px;font-size:11px;color:var(--text);z-index:1000;display:none;}
+/* Reporting panel */
+.reporting-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:500;}
+.reporting-badge.eleve{background:var(--red-bg);color:var(--red);}
+.reporting-badge.moyen{background:var(--amber-bg);color:var(--amber);}
+.reporting-badge.faible{background:var(--green-bg);color:var(--green);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-badge">FA</div>
+    <div class="page-title">FlowAlert — Dashboard Manager</div>
+    <div class="live-badge"><div class="live-dot"></div>Temps réel</div>
+    <div class="fb-badge" id="fb-status">🔥 Connexion…</div>
+  </div>
+  <div class="topbar-right">
+    <div class="clock" id="clock">--:--:--</div>
+    <button class="topbar-btn">↓ Exporter</button>
+    <button class="topbar-btn primary">+ Nouvel agent</button>
+  </div>
+</div>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-row">
+        <div class="logo-badge">FA</div>
+        <div><div class="logo-name">FlowAlert</div><div class="logo-sub">Manager</div></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec">Vue globale</div>
+      <div class="nav-item active">⬡ &nbsp;Tableau de bord</div>
+      <div class="nav-item">🗺 &nbsp;Carte</div>
+      <div class="nav-sec">Opérations</div>
+      <div class="nav-item">⚡ &nbsp;Incidents <span class="nav-badge" id="nav-incidents">0</span></div>
+      <div class="nav-item">👥 &nbsp;Agents</div>
+      <div class="nav-item">📸 &nbsp;Preuves</div>
+      <div class="nav-sec">Analyse</div>
+      <div class="nav-item">📊 &nbsp;Analytics</div>
+      <div class="nav-item">📄 &nbsp;Rapports</div>
+      <div class="nav-sec">Admin</div>
+      <div class="nav-item">🔑 &nbsp;Licences</div>
+      <div class="nav-item">⚙ &nbsp;Paramètres</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar">NH</div>
+        <div><div class="user-name">Nicolas Houtin</div><div class="user-role">Manager · Malary</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <div class="content">
+      <div class="metrics-row">
+        <div class="metric-card" style="--accent:var(--green)">
+          <div class="metric-label">Agents actifs</div>
+          <div class="metric-value" id="m-actifs">—</div>
+          <div class="metric-sub" id="m-actifs-sub">Chargement…</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--red)">
+          <div class="metric-label">Incidents ouverts</div>
+          <div class="metric-value" id="m-incidents">—</div>
+          <div class="metric-sub" id="m-incidents-sub">Chargement…</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--or)">
+          <div class="metric-label">Zones surveillées</div>
+          <div class="metric-value" id="m-zones">—</div>
+          <div class="metric-sub" id="m-zones-sub">Chargement…</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--blue)">
+          <div class="metric-label">Signalements</div>
+          <div class="metric-value" id="m-signalements">—</div>
+          <div class="metric-sub">Aujourd'hui</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--amber)">
+          <div class="metric-label">Licences</div>
+          <div class="metric-value" id="m-licences">—</div>
+          <div class="metric-sub" id="m-licences-sub">Chargement…</div>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Carte terrain</div>
+            <div class="card-sub" id="map-update">—</div>
+          </div>
+          <div class="map-area" id="map">
+            <div class="map-grid"></div>
+            <div class="map-tooltip" id="tooltip"></div>
+            <div class="empty-state" id="map-empty"><div class="ico">🗺</div><div>En attente de données Firebase</div></div>
+          </div>
+          <div class="map-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Actif</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Alerte</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Incident</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>Hors ligne</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Signalements terrain</div>
+            <div class="card-sub">Temps réel</div>
+          </div>
+          <div class="incident-list" id="incident-list">
+            <div class="empty-state"><div class="ico">⚡</div><div>Aucun signalement</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Agents terrain</div>
+            <div class="card-sub" id="agents-count" style="color:var(--green)">—</div>
+          </div>
+          <div class="agent-list" id="agent-list">
+            <div class="empty-state"><div class="ico">👥</div><div>Aucun agent</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-row">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Incidents par zone</div></div>
+          <div id="zones-chart" style="padding:10px 14px;display:flex;flex-direction:column;gap:7px;">
+            <div class="empty-state"><div class="ico">📊</div><div>En attente</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Statuts agents</div></div>
+          <div id="statut-chart" style="padding:10px 14px;display:flex;flex-direction:column;gap:7px;">
+            <div class="empty-state"><div class="ico">📈</div><div>En attente</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Licences</div>
+            <div class="card-sub" id="licences-count" style="color:var(--or)">—</div>
+          </div>
+          <div id="licences-list" style="padding:4px 0;">
+            <div class="empty-state"><div class="ico">🔑</div><div>En attente</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="chat-panel">
+    <div class="chat-panel-hdr">
+      <div class="chat-panel-title">💬 Messagerie</div>
+      <div class="live-badge" style="font-size:9px;padding:2px 7px;"><div class="live-dot"></div>Live</div>
+    </div>
+    <div class="chat-tabs">
+      <button class="chat-tab active" onclick="switchChatTab('global',this)">🌐 Global</button>
+      <button class="chat-tab" onclick="switchChatTab('urgences',this)">🚨 Urgences</button>
+      <button class="chat-tab" onclick="switchChatTab('prive',this)">🔒 Privé</button>
+    </div>
+    <div class="chat-conv-list" id="chat-conv-list" style="display:none;"></div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-empty"><span style="font-size:24px;opacity:.3">💬</span><span>Canal Global</span><span style="font-size:9px">Envoyez un message</span></div>
+    </div>
+    <div class="chat-input-area">
+      <div class="chat-conv-lbl" id="chat-conv-label">→ Canal Global</div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'){sendChatMsg();}" />
+        <button class="chat-urgent-btn" onclick="sendUrgentChat()" title="Urgent">🚨</button>
+        <button class="chat-send-btn" onclick="sendChatMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="call-overlay" id="call-overlay">
+  <div class="call-ring"></div>
+  <div class="call-ring" style="animation-delay:.5s"></div>
+  <div class="call-av" id="call-avatar">—</div>
+  <div class="call-nom" id="call-name">—</div>
+  <div class="call-stat" id="call-status">Appel en cours…</div>
+  <div class="call-dur" id="call-duration">00:00</div>
+  <div class="call-btns">
+    <button class="call-btn mute" onclick="toggleMute()">🎤</button>
+    <button class="call-btn end" onclick="endCall()">📵</button>
+  </div>
+  <audio id="remote-audio" autoplay></audio>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, onSnapshot, addDoc, query, orderBy, serverTimestamp, doc, setDoc, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBjcAEGYHbhddyrg5bEgnXUq_mWSwe27cw",
+  authDomain: "flowalert-82de1.firebaseapp.com",
+  projectId: "flowalert-82de1",
+  storageBucket: "flowalert-82de1.firebasestorage.app",
+  messagingSenderId: "983126758574",
+  appId: "1:983126758574:web:bf2c8ebbf83f5a9e48493f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const ME = {id:'manager', nom:'Nicolas Houtin'};
+let agents = [];
+let chatConv = 'messages_global';
+let chatConvName = '🌐 Canal Global';
+let unsubChat = null;
+let callTimer = null;
+let callSeconds = 0;
+let localStream = null;
+let muted = false;
+
+function toast(msg, color='var(--or)') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = color;
+  t.style.display = 'block';
+  setTimeout(()=>t.style.display='none', 3000);
+}
+
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-FR'),1000);
+document.getElementById('fb-status').textContent = '🔥 Firebase connecté';
+toast('🔥 FlowAlert connecté à Firebase');
+
+// AGENTS
+onSnapshot(collection(db,'agents'), snap => {
+  agents = snap.docs.map(d=>({id:d.id,...d.data()}));
+  const actifs = agents.filter(a=>a.statut==='actif'||a.statut==='alerte'||a.statut==='incident');
+  const zones = [...new Set(agents.filter(a=>a.zone).map(a=>a.zone))];
+
+  document.getElementById('m-actifs').textContent = actifs.length;
+  document.getElementById('m-actifs-sub').textContent = agents.length + ' agents total';
+  document.getElementById('m-zones').textContent = zones.length||'—';
+  document.getElementById('m-zones-sub').textContent = zones.slice(0,2).join(' · ')||'Aucune zone';
+  document.getElementById('m-licences').textContent = actifs.length+'/'+agents.length;
+  document.getElementById('m-licences-sub').textContent = (agents.length-actifs.length)+' dispo';
+  document.getElementById('agents-count').textContent = actifs.length+' actifs';
+  document.getElementById('licences-count').textContent = actifs.length+'/'+agents.length;
+
+  const al = document.getElementById('agent-list');
+  al.innerHTML = agents.length===0
+    ? '<div class="empty-state"><div class="ico">👥</div><div>Aucun agent</div></div>'
+    : agents.map(a=>{
+        const init=(a.nom||'??').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+        const s=a.statut||'inactif';
+        const h=a.derniere_activite?.toDate?a.derniere_activite.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'--:--';
+        return `<div class="agent-item" onclick="startCall('${a.id}','${a.nom||'Agent'}')">
+          <div class="agent-av ${s}">${init}</div>
+          <div class="agent-info"><div class="agent-name">${a.nom||'Agent'}</div><div class="agent-zone">${a.zone||'—'}</div></div>
+          <div><div class="agent-pill ${s}">${s}</div><div class="agent-time">${h}</div></div>
+        </div>`;
+      }).join('');
+
+  const mapEl = document.getElementById('map');
+  document.getElementById('map-empty').style.display = agents.some(a=>a.position_x)?'none':'flex';
+  mapEl.querySelectorAll('.map-agent').forEach(e=>e.remove());
+  const mW=mapEl.offsetWidth||380, mH=mapEl.offsetHeight||200;
+  agents.forEach(a=>{
+    if(!a.position_x||!a.position_y) return;
+    const dot=document.createElement('div');
+    dot.className='map-agent '+(a.statut||'inactif');
+    dot.style.left=(a.position_x*mW/100)+'px';
+    dot.style.top=(a.position_y*mH/100)+'px';
+    dot.onclick=()=>{
+      const t=document.getElementById('tooltip');
+      const c={actif:'#34d399',alerte:'#fbbf24',incident:'#f87171',inactif:'#454d5c'};
+      t.innerHTML=`<b style="color:${c[a.statut||'inactif']}">${a.nom||'Agent'}</b><br><span style="color:#8892a4">${a.zone||'—'} · ${a.statut||'inactif'}</span>`;
+      t.style.display='block';
+      t.style.left=(parseFloat(dot.style.left)+14)+'px';
+      t.style.top=(parseFloat(dot.style.top)-28)+'px';
+      setTimeout(()=>t.style.display='none',2500);
+    };
+    mapEl.appendChild(dot);
+  });
+  document.getElementById('map-update').textContent='MAJ '+new Date().toLocaleTimeString('fr-FR');
+
+  const sc={actif:0,alerte:0,incident:0,inactif:0};
+  agents.forEach(a=>{if(sc[a.statut]!==undefined)sc[a.statut]++;else sc.inactif++;});
+  const tot=agents.length||1;
+  const cols={actif:'var(--green)',alerte:'var(--amber)',incident:'var(--red)',inactif:'var(--text3)'};
+  const labs={actif:'Actifs',alerte:'En alerte',incident:'Incident',inactif:'Hors ligne'};
+  document.getElementById('statut-chart').innerHTML=Object.entries(sc).map(([k,v])=>`
+    <div><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-bottom:3px;"><span>${labs[k]}</span><span style="color:${cols[k]}">${v}</span></div>
+    <div style="height:3px;background:var(--bg4);border-radius:99px;"><div style="width:${v/tot*100}%;height:100%;background:${cols[k]};border-radius:99px;"></div></div></div>`).join('');
+
+  document.getElementById('licences-list').innerHTML=agents.length===0
+    ? '<div class="empty-state"><div class="ico">🔑</div><div>Aucune licence</div></div>'
+    : agents.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:10px;">${a.nom||'Agent'}</div><div style="font-size:9px;color:var(--text3)">${a.zone||'—'}</div></div>
+        <div style="font-size:9px;padding:1px 7px;border-radius:99px;${a.statut==='inactif'?'background:var(--bg4);color:var(--text3)':'background:var(--green-bg);color:var(--green)'}">${a.statut==='inactif'?'Inactive':'Active'}</div>
+      </div>`).join('');
+
+  if(document.getElementById('chat-conv-list').style.display!=='none') renderChatConvList();
+});
+
+// SIGNALEMENTS (collection events — alignée avec FlowAlert app)
+onSnapshot(query(collection(db,'events'),orderBy('timestamp','desc')), snap=>{
+  const events=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const ouverts=events.filter(e=>e.statut==='ouvert'||!e.statut);
+
+  document.getElementById('m-incidents').textContent=ouverts.length;
+  document.getElementById('m-incidents-sub').textContent=ouverts.filter(e=>e.severity===3).length+' critique(s)';
+  document.getElementById('nav-incidents').textContent=ouverts.length;
+
+  const sevColors={1:'var(--green)',2:'var(--amber)',3:'var(--red)'};
+  const sevLabels={1:'faible',2:'moyen',3:'eleve'};
+  const typeIcons={'mouvement_masse':'👥','bousculade':'⚠️','evacuation':'🚪','acces_bloque':'🚫','bagarre':'⚡','autre':'📋'};
+
+  document.getElementById('incident-list').innerHTML=events.length===0
+    ? '<div class="empty-state"><div class="ico">⚡</div><div>Aucun signalement</div></div>'
+    : events.slice(0,10).map(e=>{
+        const sev=e.severity||0;
+        const col=sevColors[sev]||'var(--text3)';
+        const lab=sevLabels[sev]||'inconnu';
+        const icon=typeIcons[e.type_incident]||'📋';
+        const h=e.heure_label||'--:--';
+        const date=e.date_label||'';
+        const lieu=e.lieu||'Lieu non précisé';
+        const type=e.type||e.type_incident||'Incident';
+        const crowd=e.crowd_estimate?`~${e.crowd_estimate} pers.`:'';
+        return `<div class="incident-item">
+          <div class="incident-icon" style="background:${col}20;color:${col};font-size:14px">${icon}</div>
+          <div class="incident-body">
+            <div class="incident-title">${type}</div>
+            <div class="incident-meta">
+              <span class="reporting-badge ${lab}">${lab}</span>
+              <span>${lieu} · ${h}</span>
+              ${crowd?`<span style="color:var(--text3)">${crowd}</span>`:''}
+            </div>
+            ${e.description?`<div style="font-size:9px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${e.description}</div>`:''}
+          </div>
+        </div>`;
+      }).join('');
+
+  // Zones chart depuis events
+  const zc={};
+  events.forEach(e=>{if(e.lieu)zc[e.lieu]=(zc[e.lieu]||0)+1;});
+  const maxZ=Math.max(...Object.values(zc),1);
+  const colors=['var(--or)','var(--blue)','var(--amber)','var(--green)','var(--red)'];
+  document.getElementById('zones-chart').innerHTML=Object.keys(zc).length===0
+    ? '<div class="empty-state"><div class="ico">📊</div><div>Aucune donnée</div></div>'
+    : Object.entries(zc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([z,c],i)=>`
+      <div><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-bottom:3px;"><span>${z}</span><span style="color:${colors[i]}">${c}</span></div>
+      <div style="height:3px;background:var(--bg4);border-radius:99px;"><div style="width:${c/maxZ*100}%;height:100%;background:${colors[i]};border-radius:99px;"></div></div></div>`).join('');
+});
+
+// Signalements du jour
+const today=new Date();today.setHours(0,0,0,0);
+onSnapshot(query(collection(db,'events'),where('timestamp','>=',Timestamp.fromDate(today))),snap=>{
+  document.getElementById('m-signalements').textContent=snap.size;
+});
+
+// MESSAGERIE — collections alignées avec FlowAlert app
+function renderChatConvList(){
+  const list=document.getElementById('chat-conv-list');
+  if(!agents.length){list.innerHTML='<div style="padding:8px 10px;font-size:9px;color:var(--text3)">Aucun agent</div>';return;}
+  list.innerHTML=agents.map(a=>{
+    const init=(a.nom||'??').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    // FORMAT UNIFIÉ : messages_{agentId}_manager
+    const col='messages_'+(a.uid||a.id)+'_manager';
+    const colors={actif:'var(--green)',alerte:'var(--amber)',incident:'var(--red)',inactif:'var(--text3)'};
+    return `<div class="chat-conv-item ${chatConv===col?'active':''}" onclick="openChatConv('${col}','${a.nom||'Agent'}')">
+      <div class="chat-conv-av" style="color:${colors[a.statut||'inactif']}">${init}</div>
+      <span style="font-size:10px;">${a.nom||'Agent'}</span>
+    </div>`;
+  }).join('');
+}
+
+function openChatConv(col, name){
+  chatConv=col; chatConvName=name;
+  document.getElementById('chat-conv-label').textContent='→ '+name;
+  if(unsubChat) unsubChat();
+  const q=query(collection(db,col),orderBy('created_at'));
+  unsubChat=onSnapshot(q,snap=>{
+    const msgs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderChatMessages(msgs);
+  });
+}
+
+function renderChatMessages(msgs){
+  const c=document.getElementById('chat-messages');
+  if(!c) return;
+  if(!msgs.length){
+    c.innerHTML=`<div class="chat-empty"><span style="font-size:20px;opacity:.3">💬</span><span>${chatConvName}</span><span style="font-size:9px">Aucun message</span></div>`;
+    return;
+  }
+  c.innerHTML=msgs.map(m=>{
+    const isMine=m.sender_id===ME.id;
+    const h=m.created_at?.toDate?m.created_at.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'--:--';
+    if(m.type==='system'||m.type==='call') return `<div class="chat-msg system">${m.contenu}</div>`;
+    return `<div class="chat-msg ${isMine?'mine':m.type==='urgent'?'urgent':'other'}">
+      ${!isMine?`<div class="chat-msg-sender">${m.sender_nom||'Agent'}</div>`:''}
+      ${m.type==='urgent'?'🚨 ':''}${m.contenu}
+      <div class="chat-msg-time">${h}</div>
+    </div>`;
+  }).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+window.switchChatTab=function(tab,el){
+  document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const convList=document.getElementById('chat-conv-list');
+  if(tab==='prive'){
+    convList.style.display='block';
+    renderChatConvList();
+    // FORMAT UNIFIÉ : messages_{agentId}_manager
+    if(agents.length) openChatConv('messages_'+(agents[0].uid||agents[0].id)+'_manager', agents[0].nom||'Agent');
+  } else {
+    convList.style.display='none';
+    const col=tab==='urgences'?'messages_urgences':'messages_global';
+    openChatConv(col, tab==='urgences'?'🚨 Urgences':'🌐 Canal Global');
+  }
+};
+
+window.sendChatMsg=async function(){
+  const input=document.getElementById('chat-input');
+  const txt=input?.value?.trim();
+  if(!txt) return;
+  input.value='';
+  try{
+    await addDoc(collection(db,chatConv),{
+      contenu:txt,
+      type:'normal',
+      sender_id:ME.id,
+      sender_nom:ME.nom,
+      created_at:serverTimestamp()
+    });
+  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+window.sendUrgentChat=async function(){
+  const input=document.getElementById('chat-input');
+  const txt=input?.value?.trim()||'⚠️ ALERTE URGENCE — Tous les agents en position !';
+  input&&(input.value='');
+  try{
+    await addDoc(collection(db,chatConv),{
+      contenu:txt,
+      type:'urgent',
+      sender_id:ME.id,
+      sender_nom:ME.nom,
+      created_at:serverTimestamp()
+    });
+  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+setTimeout(()=>openChatConv('messages_global','🌐 Canal Global'),800);
+
+// APPEL
+window.startCall=async function(agentId,agentNom){
+  document.getElementById('call-avatar').textContent=(agentNom||'??').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('call-name').textContent=agentNom;
+  document.getElementById('call-status').textContent='Appel en cours…';
+  document.getElementById('call-duration').textContent='00:00';
+  document.getElementById('call-overlay').classList.add('active');
+  callSeconds=0;
+  callTimer=setInterval(()=>{
+    callSeconds++;
+    const m=String(Math.floor(callSeconds/60)).padStart(2,'0');
+    const s=String(callSeconds%60).padStart(2,'0');
+    document.getElementById('call-duration').textContent=m+':'+s;
+  },1000);
+  try{localStream=await navigator.mediaDevices.getUserMedia({audio:true});}
+  catch(e){document.getElementById('call-status').textContent='Simulation (micro indisponible)';}
+  toast('📞 Appel vers '+agentNom);
+};
+
+window.endCall=async function(){
+  clearInterval(callTimer);
+  if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
+  const dur=document.getElementById('call-duration').textContent;
+  const nom=document.getElementById('call-name').textContent;
+  document.getElementById('call-overlay').classList.remove('active');
+  toast('Appel terminé — '+dur);
+  if(chatConv&&!chatConv.includes('global')&&!chatConv.includes('urgences')){
+    try{await addDoc(collection(db,chatConv),{contenu:'📞 Appel avec '+nom+' — durée '+dur,type:'call',sender_id:ME.id,sender_nom:ME.nom,created_at:serverTimestamp()});}catch(e){}
+  }
+};
+
+window.toggleMute=function(){
+  muted=!muted;
+  if(localStream) localStream.getAudioTracks().forEach(t=>t.enabled=!muted);
+  document.querySelector('.call-btn.mute').textContent=muted?'🔇':'🎤';
+};
+</script>
+</body>
+</html>
