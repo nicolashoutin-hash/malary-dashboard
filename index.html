@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowAlert — Dashboard Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#141619;--bg4:#1c1f24;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--text:#e8eaf0;--text2:#8892a4;--text3:#454d5c;--or:#C9A84C;--or2:#E8C97A;--or-bg:rgba(201,168,76,0.08);--or-border:rgba(201,168,76,0.2);--green:#34d399;--green-bg:rgba(52,211,153,0.08);--red:#f87171;--red-bg:rgba(248,113,113,0.08);--blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);--amber:#fbbf24;--amber-bg:rgba(251,191,36,0.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.logo-badge{width:28px;height:28px;border-radius:6px;background:var(--or);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#07080a;}
+.page-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:99px;background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,0.2);font-family:'DM Mono',monospace;}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.fb-badge{font-size:10px;padding:3px 9px;border-radius:99px;font-family:'DM Mono',monospace;background:var(--or-bg);color:var(--or);border:1px solid var(--or-border);}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.topbar-btn:hover{border-color:var(--or);color:var(--or);}
+.clock{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);}
+.app-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+.sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar-logo{padding:14px 16px;border-bottom:1px solid var(--border);}
+.logo-row{display:flex;align-items:center;gap:8px;}
+.logo-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;}
+.logo-sub{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;}
+.sidebar-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.nav-sec{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:8px 6px 4px;font-family:'DM Mono',monospace;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;cursor:pointer;color:var(--text2);font-size:11px;transition:all .15s;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--or-bg);color:var(--or);border:1px solid var(--or-border);}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:600;padding:1px 5px;border-radius:99px;}
+.sidebar-bottom{padding:10px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;background:var(--bg3);}
+.user-avatar{width:26px;height:26px;border-radius:5px;background:var(--or-bg);border:1px solid var(--or-border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--or);font-weight:600;}
+.user-name{font-size:10px;font-weight:500;}
+.user-role{font-size:9px;color:var(--text3);}
+.main-view{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.tab-content{display:none;flex:1;overflow-y:auto;padding:16px 20px;flex-direction:column;gap:12px;}
+.tab-content.active{display:flex;}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;position:relative;overflow:hidden;}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent,var(--or)),transparent);opacity:.6;}
+.metric-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'DM Mono',monospace;}
+.metric-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:600;letter-spacing:-0.5px;line-height:1;}
+.metric-sub{font-size:9px;margin-top:4px;color:var(--text3);}
+.main-grid{display:grid;grid-template-columns:1fr 1fr 260px;gap:10px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);}
+.card-title{font-size:11px;font-weight:500;font-family:'Syne',sans-serif;}
+.card-sub{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;}
+.map-legend{display:flex;align-items:center;gap:10px;padding:6px 12px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);}
+.legend-dot{width:5px;height:5px;border-radius:50%;}
+.incident-list{max-height:260px;overflow-y:auto;}
+.incident-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.incident-item:hover{background:var(--bg3);}
+.incident-icon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.incident-body{flex:1;min-width:0;}
+.incident-title{font-size:10px;font-weight:500;margin-bottom:2px;}
+.incident-meta{font-size:9px;color:var(--text3);display:flex;gap:6px;flex-wrap:wrap;}
+.agent-list{overflow-y:auto;max-height:300px;}
+.agent-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);transition:background .15s;}
+.agent-item:hover{background:var(--bg3);}
+.agent-av{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;font-family:'Syne',sans-serif;flex-shrink:0;border:2px solid transparent;}
+.agent-av.free{background:var(--blue-bg);color:var(--blue);border-color:rgba(96,165,250,.3);}
+.agent-av.pro{background:var(--or-bg);color:var(--or);border-color:var(--or-border);}
+.agent-av.enterprise{background:var(--green-bg);color:var(--green);border-color:rgba(52,211,153,.3);}
+.agent-info{flex:1;min-width:0;}
+.agent-name{font-size:10px;font-weight:500;}
+.agent-zone{font-size:9px;color:var(--text3);}
+.agent-pill{font-size:9px;padding:1px 6px;border-radius:99px;}
+.agent-pill.free{background:var(--blue-bg);color:var(--blue);}
+.agent-pill.pro{background:var(--or-bg);color:var(--or);}
+.agent-pill.enterprise{background:var(--green-bg);color:var(--green);}
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.chart-bar-row{display:flex;flex-direction:column;gap:6px;padding:12px 14px;}
+.bar-item{display:flex;align-items:center;gap:8px;}
+.bar-label{font-size:9px;color:var(--text2);width:100px;flex-shrink:0;text-align:right;}
+.bar-track{flex:1;height:6px;background:var(--bg4);border-radius:99px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.bar-val{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;width:24px;text-align:right;}
+.rapport-header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.rapport-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;}
+.rapport-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.rapport-btn{padding:6px 16px;border-radius:7px;border:1px solid var(--or-border);background:var(--or-bg);color:var(--or);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.rapport-btn:hover{background:var(--or);color:#07080a;}
+.rapport-section{background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:10px;}
+.rapport-table{width:100%;border-collapse:collapse;}
+.rapport-table th{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-weight:400;}
+.rapport-table td{font-size:10px;padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text2);}
+.rapport-table tr:last-child td{border-bottom:none;}
+.rapport-table tr:hover td{background:var(--bg3);cursor:pointer;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:var(--text3);font-size:10px;gap:6px;text-align:center;}
+.empty-state .ico{font-size:24px;opacity:.3;}
+.chat-panel{width:270px;border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;flex-shrink:0;}
+.chat-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);}
+.chat-panel-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;}
+.chat-tabs{display:flex;gap:3px;padding:7px 8px;border-bottom:1px solid var(--border);}
+.chat-tab{flex:1;padding:4px;border-radius:5px;border:none;background:transparent;color:var(--text3);font-size:9px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+.chat-tab.active{background:var(--or-bg);color:var(--or);}
+.chat-conv-list{border-bottom:1px solid var(--border);overflow-y:auto;max-height:120px;}
+.chat-conv-item{display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;transition:background .15s;font-size:10px;}
+.chat-conv-item:hover{background:var(--bg3);}
+.chat-conv-item.active{background:var(--or-bg);border-left:2px solid var(--or);}
+.chat-conv-av{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0;background:var(--bg4);color:var(--text2);}
+.chat-messages{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;}
+.chat-msg{padding:5px 8px;border-radius:6px;font-size:10px;line-height:1.5;max-width:92%;}
+.chat-msg.mine{background:var(--or-bg);border:1px solid var(--or-border);align-self:flex-end;}
+.chat-msg.other{background:var(--bg3);border:1px solid var(--border);align-self:flex-start;}
+.chat-msg.urgent{background:var(--red-bg);border:1px solid rgba(248,113,113,.3);color:var(--red);align-self:flex-start;}
+.chat-msg.system{background:transparent;border:1px solid var(--border);color:var(--text3);font-size:9px;text-align:center;align-self:center;}
+.chat-msg-sender{font-size:8px;color:var(--or);font-family:'DM Mono',monospace;margin-bottom:1px;}
+.chat-msg-time{font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;text-align:right;}
+.chat-input-area{padding:8px 10px;border-top:1px solid var(--border);}
+.chat-conv-lbl{font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:4px;}
+.chat-input-row{display:flex;gap:5px;align-items:center;}
+.chat-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:10px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;}
+.chat-input:focus{border-color:var(--or);}
+.chat-input::placeholder{color:var(--text3);}
+.chat-send-btn{width:26px;height:26px;border-radius:5px;border:none;background:var(--or);color:#07080a;font-size:11px;cursor:pointer;}
+.chat-urgent-btn{width:26px;height:26px;border-radius:5px;border:1px solid rgba(248,113,113,.3);background:var(--red-bg);color:var(--red);font-size:11px;cursor:pointer;}
+.reporting-badge{font-size:9px;padding:1px 6px;border-radius:99px;font-weight:500;}
+.reporting-badge.eleve{background:var(--red-bg);color:var(--red);}
+.reporting-badge.moyen{background:var(--amber-bg);color:var(--amber);}
+.reporting-badge.faible{background:var(--green-bg);color:var(--green);}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg4);border:1px solid var(--or-border);border-radius:7px;padding:9px 14px;font-size:11px;color:var(--text);z-index:1000;display:none;}
+.notif-stack{position:fixed;bottom:20px;left:20px;display:flex;flex-direction:column;gap:8px;z-index:2000;pointer-events:none;}
+.notif-popup{background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:0;width:280px;pointer-events:all;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateX(-320px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+.notif-popup.show{transform:translateX(0);}
+.notif-popup.urgent{border-color:rgba(248,113,113,.4);}
+.notif-header{display:flex;align-items:center;gap:8px;padding:9px 12px 6px;border-bottom:1px solid var(--border);}
+.notif-avatar{width:24px;height:24px;border-radius:5px;background:var(--or-bg);border:1px solid var(--or-border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--or);flex-shrink:0;}
+.notif-avatar.urgent{background:var(--red-bg);border-color:rgba(248,113,113,.3);color:var(--red);}
+.notif-sender{font-size:10px;font-weight:600;flex:1;}
+.notif-time{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;}
+.notif-close{width:16px;height:16px;border-radius:3px;border:none;background:transparent;color:var(--text3);font-size:10px;cursor:pointer;}
+.notif-body{padding:7px 12px 10px;}
+.notif-msg{font-size:11px;color:var(--text2);line-height:1.4;}
+.notif-msg.urgent{color:var(--red);}
+.notif-actions{display:flex;gap:6px;margin-top:8px;}
+.notif-btn{flex:1;padding:4px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:9px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+.notif-btn:hover{border-color:var(--or);color:var(--or);}
+.notif-btn.primary{background:var(--or-bg);border-color:var(--or-border);color:var(--or);}
+.notif-progress{height:2px;background:var(--or);width:100%;animation:notif-progress 5s linear forwards;}
+.notif-progress.urgent{background:var(--red);}
+@keyframes notif-progress{from{width:100%}to{width:0%}}
+
+/* ── MODAL DÉTAIL SIGNALEMENT ────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(7,8,10,.85);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:680px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1;}
+.modal-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;}
+.modal-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal-body{padding:20px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.detail-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.detail-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;font-family:'DM Mono',monospace;}
+.detail-value{font-size:12px;color:var(--text);font-weight:500;}
+.detail-desc{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.6;}
+.photos-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.photo-thumb{width:120px;height:90px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;transition:transform .15s;}
+.photo-thumb:hover{transform:scale(1.03);}
+.no-photo{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);padding:8px 12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);}
+.modal-actions{display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--border);}
+.btn{padding:8px 18px;border-radius:7px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .15s;border:1px solid transparent;}
+.btn-green{background:var(--green-bg);color:var(--green);border-color:rgba(52,211,153,.3);}
+.btn-green:hover{background:var(--green);color:#07080a;}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border-color:rgba(251,191,36,.3);}
+.btn-amber:hover{background:var(--amber);color:#07080a;}
+.btn-red{background:var(--red-bg);color:var(--red);border-color:rgba(248,113,113,.3);}
+.btn-red:hover{background:var(--red);color:#fff;}
+.btn-or{background:var(--or);color:#07080a;border-color:var(--or);}
+.btn-or:hover{background:var(--or2);}
+.statut-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:500;}
+.statut-badge.ouvert{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(251,191,36,.3);}
+.statut-badge.resolu{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,.3);}
+.statut-badge.en_cours{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.3);}
+
+/* ── MODAL PHOTO PLEIN ÉCRAN ─────────────────────────────────────────────── */
+.photo-modal{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:999;display:none;align-items:center;justify-content:center;}
+.photo-modal.active{display:flex;}
+.photo-modal img{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;}
+.photo-modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;cursor:pointer;}
+
+/* ── GESTION LICENCES ────────────────────────────────────────────────────── */
+.licences-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.licences-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.lic-stat{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;text-align:center;}
+.lic-stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:600;}
+.lic-stat-lbl{font-size:9px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.04em;}
+.form-input{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 11px;font-size:11px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;}
+.form-input:focus{border-color:var(--or);}
+.form-select{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 11px;font-size:11px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.form-select:focus{border-color:var(--or);}
+.create-user-card{background:var(--bg2);border:1px solid var(--or-border);border-radius:9px;padding:16px 20px;margin-bottom:16px;}
+.create-user-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--or);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.users-table-wrapper{background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-badge">FA</div>
+    <div class="page-title">FlowAlert — Dashboard Manager</div>
+    <div class="live-badge"><div class="live-dot"></div>Temps réel</div>
+    <div class="fb-badge" id="fb-status">🔥 Connexion…</div>
+  </div>
+  <div class="topbar-right">
+    <div class="clock" id="clock">--:--:--</div>
+    <button class="topbar-btn" onclick="exportPDF()">↓ Exporter PDF</button>
+  </div>
+</div>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-row">
+        <div class="logo-badge">FA</div>
+        <div><div class="logo-name">FlowAlert</div><div class="logo-sub">Manager · Malary</div></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec">Vue globale</div>
+      <div class="nav-item active" onclick="showTab('dashboard',this)">⬡ &nbsp;Tableau de bord</div>
+      <div class="nav-item" onclick="showTab('carte',this)">🗺 &nbsp;Carte plein écran</div>
+      <div class="nav-sec">Opérations</div>
+      <div class="nav-item" onclick="showTab('incidents',this)">⚡ &nbsp;Signalements <span class="nav-badge" id="nav-incidents">0</span></div>
+      <div class="nav-item" onclick="showTab('agents',this)">👥 &nbsp;Utilisateurs</div>
+      <div class="nav-sec">Analyse</div>
+      <div class="nav-item" onclick="showTab('analytics',this)">📊 &nbsp;Analytics</div>
+      <div class="nav-item" onclick="showTab('rapports',this)">📄 &nbsp;Rapports</div>
+      <div class="nav-sec">Admin</div>
+      <div class="nav-item" onclick="showTab('licences',this)">🔑 &nbsp;Licences</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar">MG</div>
+        <div><div class="user-name">Manager</div><div class="user-role">FlowAlert · Malary</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-view">
+
+    <!-- DASHBOARD -->
+    <div class="tab-content active" id="tab-dashboard">
+      <div class="metrics-row">
+        <div class="metric-card" style="--accent:var(--green)">
+          <div class="metric-label">Utilisateurs</div>
+          <div class="metric-value" id="m-actifs">—</div>
+          <div class="metric-sub" id="m-actifs-sub">Chargement…</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--red)">
+          <div class="metric-label">Signalements ouverts</div>
+          <div class="metric-value" id="m-incidents">—</div>
+          <div class="metric-sub" id="m-incidents-sub">—</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--blue)">
+          <div class="metric-label">Signalements aujourd'hui</div>
+          <div class="metric-value" id="m-signalements">—</div>
+          <div class="metric-sub">Depuis minuit</div>
+        </div>
+        <div class="metric-card" style="--accent:var(--amber)">
+          <div class="metric-label">Licences actives</div>
+          <div class="metric-value" id="m-licences">—</div>
+          <div class="metric-sub" id="m-licences-sub">—</div>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Carte terrain</div>
+            <div class="card-sub" id="map-update">—</div>
+          </div>
+          <div id="gmap-dashboard" style="height:260px;width:100%;"></div>
+          <div class="map-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Faible</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Moyen</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Élevé</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Signalements terrain</div>
+            <div class="card-sub">Cliquer pour le détail</div>
+          </div>
+          <div class="incident-list" id="incident-list">
+            <div class="empty-state"><div class="ico">⚡</div><div>Aucun signalement</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Utilisateurs</div>
+            <div class="card-sub" id="agents-count" style="color:var(--green)">—</div>
+          </div>
+          <div class="agent-list" id="agent-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARTE -->
+    <div class="tab-content" id="tab-carte" style="padding:0;">
+      <div id="gmap-fullscreen" style="flex:1;width:100%;min-height:0;"></div>
+    </div>
+
+    <!-- SIGNALEMENTS -->
+    <div class="tab-content" id="tab-incidents">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Tous les signalements</div>
+          <div class="card-sub" id="incidents-total">—</div>
+        </div>
+        <div id="incidents-full-list"></div>
+      </div>
+    </div>
+
+    <!-- UTILISATEURS -->
+    <div class="tab-content" id="tab-agents">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Tous les utilisateurs</div>
+          <div class="card-sub" id="agents-total">—</div>
+        </div>
+        <table class="rapport-table" style="width:100%">
+          <thead><tr><th>Photo</th><th>Nom</th><th>Email</th><th>Plan</th><th>Rôle</th><th>Signalements</th><th>Inscrit le</th></tr></thead>
+          <tbody id="agents-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="tab-content" id="tab-analytics">
+      <div class="analytics-grid">
+        <div class="card"><div class="card-header"><div class="card-title">Par type</div></div><div class="chart-bar-row" id="chart-type"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Par gravité</div></div><div class="chart-bar-row" id="chart-gravite"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Par lieu</div></div><div class="chart-bar-row" id="chart-zone"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Plans utilisateurs</div></div><div class="chart-bar-row" id="chart-plans"></div></div>
+      </div>
+    </div>
+
+    <!-- RAPPORTS -->
+    <div class="tab-content" id="tab-rapports">
+      <div class="rapport-header">
+        <div><div class="rapport-title">Main courante digitale</div><div class="rapport-sub" id="rapport-date">—</div></div>
+        <button class="rapport-btn" onclick="exportPDF()">↓ Exporter PDF</button>
+      </div>
+      <div class="rapport-section">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+          <span>Journal des signalements <span style="font-size:9px;color:var(--text3);font-weight:400;">— cliquer sur une ligne pour le détail</span></span>
+          <span id="rapport-count" style="color:var(--text3);font-size:9px">—</span>
+        </div>
+        <table class="rapport-table" style="width:100%">
+          <thead><tr><th>Date</th><th>Heure</th><th>Type</th><th>Gravité</th><th>Lieu</th><th>Personnes</th><th>Agent</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody id="rapport-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LICENCES -->
+    <div class="tab-content" id="tab-licences">
+      <div class="licences-stats">
+        <div class="lic-stat"><div class="lic-stat-val" id="lic-total" style="color:var(--or)">—</div><div class="lic-stat-lbl">Total utilisateurs</div></div>
+        <div class="lic-stat"><div class="lic-stat-val" id="lic-pro" style="color:var(--green)">—</div><div class="lic-stat-lbl">Licences Pro/Enterprise</div></div>
+        <div class="lic-stat"><div class="lic-stat-val" id="lic-free" style="color:var(--blue)">—</div><div class="lic-stat-lbl">Comptes gratuits</div></div>
+      </div>
+
+      <!-- Formulaire création utilisateur -->
+      <div class="create-user-card">
+        <div class="create-user-title">✦ Créer un nouvel utilisateur</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input class="form-input" id="new-email" type="email" placeholder="agent@client.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mot de passe *</label>
+            <input class="form-input" id="new-password" type="password" placeholder="Min. 8 caractères">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom complet</label>
+            <input class="form-input" id="new-name" type="text" placeholder="Prénom Nom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Plan</label>
+            <select class="form-select" id="new-plan">
+              <option value="free">Free</option>
+              <option value="pro" selected>Pro</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Rôle</label>
+            <select class="form-select" id="new-role">
+              <option value="agent">Agent terrain</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company ID (client)</label>
+            <input class="form-input" id="new-company" type="text" placeholder="ex: securitas-lyon">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button class="btn btn-or" onclick="createUser()" id="create-btn">+ Créer l'utilisateur</button>
+          <div id="create-status" style="font-size:10px;color:var(--text3);display:flex;align-items:center;"></div>
+        </div>
+      </div>
+
+      <!-- Liste des utilisateurs -->
+      <div class="users-table-wrapper">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;display:flex;justify-content:space-between;">
+          <span>Utilisateurs actifs</span>
+          <span id="licences-total" style="color:var(--text3);font-size:9px;font-weight:400;font-family:'DM Mono',monospace;">—</span>
+        </div>
+        <table class="rapport-table" style="width:100%">
+          <thead><tr><th>Utilisateur</th><th>Email</th><th>Plan</th><th>Rôle</th><th>Company</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+          <tbody id="licences-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-panel">
+    <div class="chat-panel-hdr">
+      <div class="chat-panel-title">💬 Messagerie</div>
+      <div class="live-badge" style="font-size:9px;padding:2px 7px;"><div class="live-dot"></div>Live</div>
+    </div>
+    <div class="chat-tabs">
+      <button class="chat-tab active" onclick="switchChatTab('global',this)">🌐 Global</button>
+      <button class="chat-tab" onclick="switchChatTab('urgences',this)">🚨 Urgences</button>
+      <button class="chat-tab" onclick="switchChatTab('prive',this)">🔒 Privé</button>
+    </div>
+    <div class="chat-conv-list" id="chat-conv-list" style="display:none;"></div>
+    <div class="chat-messages" id="chat-messages">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:6px;color:var(--text3);font-size:10px;text-align:center;padding:16px;">
+        <span style="font-size:24px;opacity:.3">💬</span><span>Canal Global</span>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <div class="chat-conv-lbl" id="chat-conv-label">→ Canal Global</div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Message…" onkeydown="if(event.key==='Enter'){sendChatMsg();}"/>
+        <button class="chat-urgent-btn" onclick="sendUrgentChat()">🚨</button>
+        <button class="chat-send-btn" onclick="sendChatMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL SIGNALEMENT -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Détail du signalement</div>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div id="modal-type-icon" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;"></div>
+        <div>
+          <div id="modal-type" style="font-size:15px;font-weight:600;margin-bottom:4px;"></div>
+          <span id="modal-statut" class="statut-badge ouvert">● Ouvert</span>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-card"><div class="detail-label">Gravité</div><div class="detail-value" id="modal-gravite">—</div></div>
+        <div class="detail-card"><div class="detail-label">Lieu</div><div class="detail-value" id="modal-lieu">—</div></div>
+        <div class="detail-card"><div class="detail-label">Date</div><div class="detail-value" id="modal-date">—</div></div>
+        <div class="detail-card"><div class="detail-label">Heure</div><div class="detail-value" id="modal-heure">—</div></div>
+        <div class="detail-card"><div class="detail-label">Agent</div><div class="detail-value" id="modal-agent">—</div></div>
+        <div class="detail-card"><div class="detail-label">Estimation foule</div><div class="detail-value" id="modal-crowd">—</div></div>
+      </div>
+      <div style="margin-bottom:12px;"><div class="detail-label" style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-family:'DM Mono',monospace;">Description</div>
+        <div class="detail-desc" id="modal-desc">—</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div class="detail-label" style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-family:'DM Mono',monospace;">Photos / Preuves</div>
+        <div class="photos-grid" id="modal-photos"></div>
+      </div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PHOTO PLEIN ÉCRAN -->
+<div class="photo-modal" id="photo-modal" onclick="closePhotoModal()">
+  <button class="photo-modal-close" onclick="closePhotoModal()">✕</button>
+  <img id="photo-modal-img" src="" alt="">
+</div>
+
+<!-- MODAL MODIFIER UTILISATEUR -->
+<div class="modal-overlay" id="edit-user-modal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-hdr">
+      <div class="modal-title">Modifier l'utilisateur</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Plan</label>
+          <select class="form-select" id="edit-plan">
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rôle</label>
+          <select class="form-select" id="edit-role">
+            <option value="agent">Agent terrain</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Company ID</label>
+        <input class="form-input" id="edit-company" type="text" placeholder="ex: securitas-lyon">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-or" onclick="saveEditUser()" style="flex:1;">Sauvegarder</button>
+        <button class="btn btn-red" onclick="closeEditModal()">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="notif-stack" id="notif-stack"></div>
+
+<script>
+let gmapDashboard=null,gmapFull=null,allMarkers=[],allSignalements=[],allUsers=[];
+let currentDetailId=null,currentEditUserId=null;
+
+function initGoogleMaps(){
+  const opts={zoom:6,center:{lat:46.6,lng:2.3},mapTypeId:'roadmap',styles:[
+    {elementType:'geometry',stylers:[{color:'#1a1c20'}]},
+    {elementType:'labels.text.fill',stylers:[{color:'#8892a4'}]},
+    {elementType:'labels.text.stroke',stylers:[{color:'#07080a'}]},
+    {featureType:'road',elementType:'geometry',stylers:[{color:'#2c2f36'}]},
+    {featureType:'water',elementType:'geometry',stylers:[{color:'#0d1117'}]},
+    {featureType:'poi',stylers:[{visibility:'off'}]},
+    {featureType:'transit',stylers:[{visibility:'off'}]}
+  ]};
+  const d=document.getElementById('gmap-dashboard');
+  const f=document.getElementById('gmap-fullscreen');
+  if(d) gmapDashboard=new google.maps.Map(d,opts);
+  if(f) gmapFull=new google.maps.Map(f,{...opts,zoom:7});
+  renderMapMarkers();
+}
+
+function renderMapMarkers(){
+  allMarkers.forEach(m=>m.setMap(null));
+  allMarkers=[];
+  const cols={1:'#34d399',2:'#fbbf24',3:'#f87171'};
+  allSignalements.forEach(e=>{
+    let lat=null,lng=null;
+    if(e.position){lat=e.position.latitude||e.position._lat;lng=e.position.longitude||e.position._long;}
+    else if(e.location){lat=e.location.latitude||e.location._lat;lng=e.location.longitude||e.location._long;}
+    else if(e.lat&&e.lng){lat=e.lat;lng=e.lng;}
+    if(!lat||!lng||(lat===0&&lng===0)) return;
+    const sev=e.severity||e.niveau||1;
+    const color=cols[sev]||'#C9A84C';
+    [gmapDashboard,gmapFull].forEach(map=>{
+      if(!map) return;
+      const marker=new google.maps.Marker({
+        position:{lat:parseFloat(lat),lng:parseFloat(lng)},map,
+        icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:color,fillOpacity:.9,strokeColor:'#07080a',strokeWeight:2},
+        title:e.type||e.type_incident||'Signalement'
+      });
+      const info=new google.maps.InfoWindow({content:`<div style="background:#1c1f24;color:#e8eaf0;padding:8px 10px;border-radius:6px;font-size:11px;min-width:140px;">
+        <div style="font-weight:600;margin-bottom:4px;">${e.type||e.type_incident||'Signalement'}</div>
+        <div style="color:#8892a4">${e.lieu||'—'} · ${e.heure_label||'—'}</div>
+        ${e.description?`<div style="margin-top:4px;color:#c9a84c">${e.description}</div>`:''}
+      </div>`});
+      marker.addListener('click',()=>{info.open(map,marker);openDetailModal(e.id);});
+      allMarkers.push(marker);
+    });
+  });
+  document.getElementById('map-update').textContent='MAJ '+new Date().toLocaleTimeString('fr-FR');
+}
+window.renderMapMarkers=renderMapMarkers;
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEOkpbWDHNu5M2Gb4m-wVt1fKCqtkxnBo&callback=initGoogleMaps"></script>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,query,orderBy,serverTimestamp,doc,where,Timestamp,setDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getAuth,createUserWithEmailAndPassword,updateProfile}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig={
+  apiKey:"AIzaSyBjcAEGYHbhddyrg5bEgnXUq_mWSwe27cw",
+  authDomain:"flowalert-82de1.firebaseapp.com",
+  projectId:"flowalert-82de1",
+  storageBucket:"flowalert-82de1.firebasestorage.app",
+  messagingSenderId:"983126758574",
+  appId:"1:983126758574:web:bf2c8ebbf83f5a9e48493f"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const auth=getAuth(app);
+const ME={id:'manager',nom:'Manager FlowAlert'};
+let chatConv='messages_global',chatConvName='🌐 Canal Global',unsubChat=null;
+
+function toast(msg,color='var(--or)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=color;t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-FR'),1000);
+document.getElementById('fb-status').textContent='🔥 Firebase connecté';
+
+const sevColors={1:'var(--green)',2:'var(--amber)',3:'var(--red)'};
+const sevLabels={1:'Faible',2:'Moyen',3:'Élevé'};
+const sevClass={1:'faible',2:'moyen',3:'eleve'};
+const typeIcons={'mouvement_masse':'👥','bousculade':'⚠️','evacuation':'🚪','acces_bloque':'🚫','bagarre':'⚡','autre':'📋'};
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+onSnapshot(collection(db,'users'),snap=>{
+  allUsers=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const plans={free:0,pro:0,enterprise:0};
+  allUsers.forEach(u=>{const p=u.plan||'free';plans[p]=(plans[p]||0)+1;});
+  document.getElementById('m-actifs').textContent=allUsers.length;
+  document.getElementById('m-actifs-sub').textContent=allUsers.length+' utilisateur(s)';
+  document.getElementById('m-licences').textContent=(plans.pro||0)+(plans.enterprise||0);
+  document.getElementById('m-licences-sub').textContent=(plans.free||0)+' gratuit(s)';
+  document.getElementById('agents-count').textContent=allUsers.length+' utilisateur(s)';
+  document.getElementById('agents-total').textContent=allUsers.length+' utilisateur(s)';
+  document.getElementById('lic-total').textContent=allUsers.length;
+  document.getElementById('lic-pro').textContent=(plans.pro||0)+(plans.enterprise||0);
+  document.getElementById('lic-free').textContent=plans.free||0;
+  document.getElementById('licences-total').textContent=allUsers.length+' compte(s)';
+
+  document.getElementById('agent-list').innerHTML=allUsers.length===0
+    ?'<div class="empty-state"><div class="ico">👥</div><div>Aucun utilisateur</div></div>'
+    :allUsers.map(u=>{
+      const name=u.displayName||u.email?.split('@')[0]||'?';
+      const plan=u.plan||'free';
+      return`<div class="agent-item">
+        <div class="agent-av ${plan}">${name.slice(0,2).toUpperCase()}</div>
+        <div class="agent-info"><div class="agent-name">${name}</div><div class="agent-zone">${u.email||'—'}</div></div>
+        <div class="agent-pill ${plan}">${plan}</div>
+      </div>`;
+    }).join('');
+
+  document.getElementById('agents-table-body').innerHTML=allUsers.length===0
+    ?'<tr><td colspan="7"><div class="empty-state"><div class="ico">👥</div></div></td></tr>'
+    :allUsers.map(u=>{
+      const name=u.displayName||u.email?.split('@')[0]||'—';
+      const h=u.created_time?.toDate?u.created_time.toDate().toLocaleDateString('fr-FR'):'—';
+      return`<tr>
+        <td><div style="width:24px;height:24px;border-radius:4px;background:var(--or-bg);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--or)">${name.slice(0,2).toUpperCase()}</div></td>
+        <td>${name}</td><td style="color:var(--text3)">${u.email||'—'}</td>
+        <td><span class="agent-pill ${u.plan||'free'}">${u.plan||'free'}</span></td>
+        <td style="color:var(--text3)">${u.role||'—'}</td>
+        <td style="color:var(--or)">${u.signalements_count||0}</td>
+        <td style="color:var(--text3)">${h}</td>
+      </tr>`;
+    }).join('');
+
+  // Table licences
+  document.getElementById('licences-table-body').innerHTML=allUsers.length===0
+    ?'<tr><td colspan="7"><div class="empty-state"><div class="ico">🔑</div></div></td></tr>'
+    :allUsers.map(u=>{
+      const name=u.displayName||u.email?.split('@')[0]||'—';
+      const h=u.created_time?.toDate?u.created_time.toDate().toLocaleDateString('fr-FR'):'—';
+      return`<tr>
+        <td>${name}</td>
+        <td style="color:var(--text3)">${u.email||'—'}</td>
+        <td><span class="agent-pill ${u.plan||'free'}">${u.plan||'free'}</span></td>
+        <td style="color:var(--text3)">${u.role||'—'}</td>
+        <td style="color:var(--text3);font-family:monospace;font-size:9px">${u.companyId||'—'}</td>
+        <td style="color:var(--text3)">${h}</td>
+        <td>
+          <div style="display:flex;gap:4px;">
+            <button onclick="openEditUser('${u.id}')" style="padding:3px 8px;border-radius:4px;border:1px solid var(--or-border);background:var(--or-bg);color:var(--or);font-size:9px;cursor:pointer;">Modifier</button>
+            <button onclick="window.deleteUser('${u.id}','${u.email||''}')" style="padding:3px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.3);background:var(--red-bg);color:var(--red);font-size:9px;cursor:pointer;">Supprimer</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+  const tot=allUsers.length||1;
+  const planColors={free:'var(--blue)',pro:'var(--or)',enterprise:'var(--green)'};
+  document.getElementById('chart-plans').innerHTML=Object.entries(plans).map(([k,v])=>`
+    <div class="bar-item"><span class="bar-label">${k}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${v/tot*100}%;background:${planColors[k]||'var(--text3)'}"></div></div>
+    <span class="bar-val">${v}</span></div>`).join('');
+
+  if(document.getElementById('chat-conv-list').style.display!=='none') window.renderChatConvList();
+  watchPrivateChats(allUsers);
+});
+
+// ── EVENTS ───────────────────────────────────────────────────────────────────
+onSnapshot(query(collection(db,'events'),orderBy('create_at','desc')),snap=>{
+  allSignalements=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const complets=allSignalements.filter(e=>e.type_incident||e.type);
+  const ouverts=complets.filter(e=>e.statut==='ouvert'||!e.statut);
+  document.getElementById('m-incidents').textContent=ouverts.length;
+  document.getElementById('m-incidents-sub').textContent=ouverts.filter(e=>(e.severity||e.niveau)===3).length+' critique(s)';
+  document.getElementById('nav-incidents').textContent=ouverts.length;
+  document.getElementById('incidents-total').textContent=complets.length+' total';
+
+  const buildItem=e=>{
+    const sev=e.severity||e.niveau||0;
+    const col=sevColors[sev]||'var(--text3)';
+    const lab=sevLabels[sev]||'—';
+    const cls=sevClass[sev]||'faible';
+    const icon=typeIcons[e.type_incident]||'📋';
+    const ts=e.create_at||e.created_at;
+    const h=e.heure_label||(ts?.toDate?ts.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—');
+    const lieu=e.lieu||'—';
+    const type=e.type||e.type_incident||'Signalement';
+    const crowd=e.crowd_estimate?`~${e.crowd_estimate} pers.`:'';
+    return`<div class="incident-item" onclick="openDetailModal('${e.id}')">
+      <div class="incident-icon" style="background:${col}20;color:${col};font-size:14px">${icon}</div>
+      <div class="incident-body">
+        <div class="incident-title">${type}</div>
+        <div class="incident-meta">
+          <span class="reporting-badge ${cls}">${lab}</span>
+          <span>${lieu} · ${h}</span>
+          ${crowd?`<span>${crowd}</span>`:''}
+        </div>
+        ${e.description?`<div style="font-size:9px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${e.description}</div>`:''}
+      </div>
+      <span style="color:var(--text3);font-size:16px;margin-left:4px;">›</span>
+    </div>`;
+  };
+
+  document.getElementById('incident-list').innerHTML=complets.length===0
+    ?'<div class="empty-state"><div class="ico">⚡</div><div>Aucun signalement</div></div>'
+    :complets.slice(0,8).map(buildItem).join('');
+
+  document.getElementById('incidents-full-list').innerHTML=complets.length===0
+    ?'<div class="empty-state"><div class="ico">⚡</div><div>Aucun signalement</div></div>'
+    :complets.map(buildItem).join('');
+
+  // Rapport
+  document.getElementById('rapport-date').textContent='Généré le '+new Date().toLocaleDateString('fr-FR')+' à '+new Date().toLocaleTimeString('fr-FR');
+  document.getElementById('rapport-count').textContent=complets.length+' signalement(s)';
+  document.getElementById('rapport-table-body').innerHTML=complets.length===0
+    ?'<tr><td colspan="9"><div class="empty-state"><div class="ico">📄</div></div></td></tr>'
+    :complets.map(e=>{
+      const sev=e.severity||e.niveau||0;
+      const cls=sevClass[sev]||'faible';
+      const col=sevColors[sev]||'var(--text3)';
+      const lab=sevLabels[sev]||'—';
+      const ts=e.create_at||e.created_at;
+      const h=e.heure_label||(ts?.toDate?ts.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—');
+      const date=e.date_label||(ts?.toDate?ts.toDate().toLocaleDateString('fr-FR'):'—');
+      const statutLabel=e.statut==='resolu'?'<span style="color:var(--green)">✓ Résolu</span>':e.statut==='en_cours'?'<span style="color:var(--blue)">⟳ En cours</span>':'<span style="color:var(--amber)">● Ouvert</span>';
+      return`<tr onclick="openDetailModal('${e.id}')" style="cursor:pointer;">
+        <td>${date}</td><td>${h}</td>
+        <td>${e.type||e.type_incident||'—'}</td>
+        <td><span class="reporting-badge ${cls}" style="color:${col}">${lab}</span></td>
+        <td>${e.lieu||'—'}</td><td>${e.crowd_estimate||'—'}</td>
+        <td style="color:var(--text3)">${e.user_email||'—'}</td>
+        <td>${statutLabel}</td>
+        <td><span style="color:var(--or);font-size:12px;cursor:pointer;">› Voir</span></td>
+      </tr>`;
+    }).join('');
+
+  // Analytics
+  const tc={};
+  complets.forEach(e=>{const t=e.type_incident||e.type||'autre';tc[t]=(tc[t]||0)+1;});
+  const maxT=Math.max(...Object.values(tc),1);
+  const typeColors={'mouvement_masse':'var(--blue)','bousculade':'var(--amber)','evacuation':'var(--green)','acces_bloque':'var(--red)','bagarre':'var(--red)','autre':'var(--text3)'};
+  document.getElementById('chart-type').innerHTML=Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+    <div class="bar-item"><span class="bar-label">${k.replace(/_/g,' ')}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${v/maxT*100}%;background:${typeColors[k]||'var(--or)'}"></div></div>
+    <span class="bar-val">${v}</span></div>`).join('')||'<div class="empty-state"><div class="ico">📊</div></div>';
+
+  const gc={1:0,2:0,3:0};
+  complets.forEach(e=>{const s=e.severity||e.niveau||0;if(gc[s]!==undefined) gc[s]++;});
+  const maxG=Math.max(...Object.values(gc),1);
+  document.getElementById('chart-gravite').innerHTML=Object.entries(gc).map(([k,v])=>`
+    <div class="bar-item"><span class="bar-label">${sevLabels[k]||k}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${v/maxG*100}%;background:${sevColors[k]||'var(--or)'}"></div></div>
+    <span class="bar-val">${v}</span></div>`).join('');
+
+  const zc={};
+  complets.forEach(e=>{if(e.lieu) zc[e.lieu]=(zc[e.lieu]||0)+1;});
+  const maxZ=Math.max(...Object.values(zc),1);
+  document.getElementById('chart-zone').innerHTML=Object.entries(zc).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>`
+    <div class="bar-item"><span class="bar-label">${k}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${v/maxZ*100}%;background:var(--or)"></div></div>
+    <span class="bar-val">${v}</span></div>`).join('')||'<div class="empty-state"><div class="ico">📊</div></div>';
+
+  if(window.renderMapMarkers) window.renderMapMarkers();
+});
+
+// Signalements du jour
+const today=new Date();today.setHours(0,0,0,0);
+onSnapshot(query(collection(db,'events'),where('create_at','>=',Timestamp.fromDate(today))),snap=>{
+  const c=snap.docs.filter(d=>{const data=d.data();return data.type_incident||data.type;});
+  document.getElementById('m-signalements').textContent=c.length;
+});
+
+// ── MODAL DÉTAIL ──────────────────────────────────────────────────────────────
+window.openDetailModal=function(eventId){
+  const e=allSignalements.find(s=>s.id===eventId);
+  if(!e) return;
+  currentDetailId=eventId;
+  const sev=e.severity||e.niveau||0;
+  const col=(sev===3?'#f87171':sev===2?'#fbbf24':'#34d399');
+  const lab=sevLabels[sev]||'—';
+  const icon=typeIcons[e.type_incident]||'📋';
+  const type=e.type||e.type_incident||'Signalement';
+  const ts=e.create_at||e.created_at;
+  const date=e.date_label||(ts?.toDate?ts.toDate().toLocaleDateString('fr-FR'):'—');
+  const h=e.heure_label||(ts?.toDate?ts.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—');
+  const statut=e.statut||'ouvert';
+
+  document.getElementById('modal-title').textContent='Signalement — '+type;
+  document.getElementById('modal-type-icon').style.background=col+'22';
+  document.getElementById('modal-type-icon').style.border='1px solid '+col+'44';
+  document.getElementById('modal-type-icon').textContent=icon;
+  document.getElementById('modal-type').textContent=type;
+  document.getElementById('modal-type').style.color='#e8eaf0';
+
+  const statutEl=document.getElementById('modal-statut');
+  statutEl.textContent=statut==='resolu'?'✓ Résolu':statut==='en_cours'?'⟳ En cours':'● Ouvert';
+  statutEl.className='statut-badge '+statut;
+
+  document.getElementById('modal-gravite').textContent=lab;
+  document.getElementById('modal-gravite').style.color=col;
+  document.getElementById('modal-lieu').textContent=e.lieu||'Non précisé';
+  document.getElementById('modal-date').textContent=date;
+  document.getElementById('modal-heure').textContent=h;
+  document.getElementById('modal-agent').textContent=e.user_email||e.user_id||'—';
+  document.getElementById('modal-crowd').textContent=e.crowd_estimate?'~'+e.crowd_estimate+' personne(s)':'Non renseigné';
+  document.getElementById('modal-desc').textContent=e.description||'Aucune description';
+
+  // Photos
+  const photos=(e.photos||[]).filter(Boolean);
+  document.getElementById('modal-photos').innerHTML=photos.length===0
+    ?'<div class="no-photo">📷 Aucune photo jointe</div>'
+    :photos.map(url=>`<img class="photo-thumb" src="${url}" alt="Photo" onclick="openPhotoModal('${url}')">`).join('');
+
+  // Actions
+  const isOuvert=statut==='ouvert'||statut==='en_cours';
+  document.getElementById('modal-actions').innerHTML=isOuvert
+    ?`<button class="btn btn-green" onclick="updateStatut('${eventId}','resolu')">✓ Marquer résolu</button>
+       <button class="btn btn-amber" onclick="updateStatut('${eventId}','en_cours')">⟳ En cours</button>
+       <button class="btn btn-red" onclick="updateStatut('${eventId}','ferme')" style="margin-left:auto;">Fermer</button>`
+    :`<button class="btn btn-or" onclick="updateStatut('${eventId}','ouvert')">↺ Réouvrir</button>`;
+
+  document.getElementById('detail-modal').classList.add('active');
+};
+
+window.closeDetailModal=function(){
+  document.getElementById('detail-modal').classList.remove('active');
+  currentDetailId=null;
+};
+
+window.updateStatut=async function(eventId,statut){
+  try{
+    await updateDoc(doc(db,'events',eventId),{statut});
+    toast('Statut mis à jour → '+statut,'var(--green)');
+    window.closeDetailModal();
+  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+window.openPhotoModal=function(url){
+  document.getElementById('photo-modal-img').src=url;
+  document.getElementById('photo-modal').classList.add('active');
+};
+
+window.closePhotoModal=function(){
+  document.getElementById('photo-modal').classList.remove('active');
+};
+
+// ── GESTION LICENCES ──────────────────────────────────────────────────────────
+window.createUser=async function(){
+  const email=document.getElementById('new-email').value.trim();
+  const password=document.getElementById('new-password').value.trim();
+  const name=document.getElementById('new-name').value.trim();
+  const plan=document.getElementById('new-plan').value;
+  const role=document.getElementById('new-role').value;
+  const company=document.getElementById('new-company').value.trim();
+
+  if(!email||!password){toast('Email et mot de passe requis','var(--red)');return;}
+  if(password.length<8){toast('Mot de passe : 8 caractères minimum','var(--red)');return;}
+
+  const btn=document.getElementById('create-btn');
+  const status=document.getElementById('create-status');
+  btn.disabled=true;btn.textContent='Création…';
+  status.textContent='⟳ Création du compte…';
+
+  try{
+    // Créer le compte Firebase Auth
+    const cred=await createUserWithEmailAndPassword(auth,email,password);
+    if(name) await updateProfile(cred.user,{displayName:name});
+
+    // Créer le document Firestore users
+    await setDoc(doc(db,'users',cred.user.uid),{
+      uid:cred.user.uid,
+      email,
+      displayName:name||email.split('@')[0],
+      plan,
+      role,
+      companyId:company||'',
+      signalements_count:0,
+      alertRadius:2000,
+      notificationsEnabled:true,
+      created_time:serverTimestamp(),
+    });
+
+    toast('Utilisateur créé : '+email,'var(--green)');
+    status.textContent='✓ Créé avec succès';
+    // Reset form
+    ['new-email','new-password','new-name','new-company'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('new-plan').value='pro';
+    document.getElementById('new-role').value='agent';
+    setTimeout(()=>status.textContent='',3000);
+  }catch(e){
+    toast('Erreur: '+e.message,'var(--red)');
+    status.textContent='✗ '+e.message;
+  }
+  btn.disabled=false;btn.textContent='+ Créer l\'utilisateur';
+};
+
+window.openEditUser=function(userId){
+  const user=allUsers.find(u=>u.id===userId);
+  if(!user) return;
+  currentEditUserId=userId;
+  document.getElementById('edit-plan').value=user.plan||'free';
+  document.getElementById('edit-role').value=user.role||'agent';
+  document.getElementById('edit-company').value=user.companyId||'';
+  document.getElementById('edit-user-modal').classList.add('active');
+};
+
+window.closeEditModal=function(){
+  document.getElementById('edit-user-modal').classList.remove('active');
+  currentEditUserId=null;
+};
+
+window.saveEditUser=async function(){
+  if(!currentEditUserId) return;
+  const plan=document.getElementById('edit-plan').value;
+  const role=document.getElementById('edit-role').value;
+  const company=document.getElementById('edit-company').value.trim();
+  try{
+    await updateDoc(doc(db,'users',currentEditUserId),{plan,role,companyId:company});
+    toast('Utilisateur mis à jour','var(--green)');
+    window.closeEditModal();
+  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+window.deleteUser=async function(userId,email){
+  if(!confirm('Supprimer l\'utilisateur '+email+' ?\nSes données Firestore seront supprimées.')) return;
+  try{
+    await deleteDoc(doc(db,'users',userId));
+    toast('Utilisateur supprimé','var(--green)');
+  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+// ── CHAT ──────────────────────────────────────────────────────────────────────
+window.renderChatConvList=function(){
+  const list=document.getElementById('chat-conv-list');
+  list.innerHTML=allUsers.length===0
+    ?'<div style="padding:8px 10px;font-size:9px;color:var(--text3)">Aucun utilisateur</div>'
+    :allUsers.map(u=>{
+      const name=u.displayName||u.email?.split('@')[0]||'Agent';
+      const init=name.slice(0,2).toUpperCase();
+      const col='messages_'+(u.uid||u.id)+'_manager';
+      return`<div class="chat-conv-item ${chatConv===col?'active':''}" onclick="window.openChatConv('${col}','${name}')">
+        <div class="chat-conv-av">${init}</div><span>${name}</span>
+      </div>`;
+    }).join('');
+};
+
+window.openChatConv=function(col,name){
+  chatConv=col;chatConvName=name;
+  document.getElementById('chat-conv-label').textContent='→ '+name;
+  if(unsubChat) unsubChat();
+  unsubChat=onSnapshot(query(collection(db,col),orderBy('created_at')),snap=>{
+    renderChatMessages(snap.docs.map(d=>({id:d.id,...d.data()})));
+  });
+};
+
+function renderChatMessages(msgs){
+  const c=document.getElementById('chat-messages');
+  if(!msgs.length){
+    c.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:6px;color:var(--text3);font-size:10px;text-align:center;padding:16px;"><span style="font-size:20px;opacity:.3">💬</span><span>${chatConvName}</span></div>`;
+    return;
+  }
+  c.innerHTML=msgs.map(m=>{
+    const isMine=m.sender_id===ME.id;
+    const h=m.created_at?.toDate?m.created_at.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
+    if(m.type==='system') return`<div class="chat-msg system">${m.contenu}</div>`;
+    return`<div class="chat-msg ${isMine?'mine':m.type==='urgent'?'urgent':'other'}">
+      ${!isMine?`<div class="chat-msg-sender">${m.sender_nom||'Agent'}</div>`:''}
+      ${m.type==='urgent'?'🚨 ':''}${m.contenu}
+      <div class="chat-msg-time">${h}</div>
+    </div>`;
+  }).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+window.switchChatTab=function(tab,el){
+  document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const convList=document.getElementById('chat-conv-list');
+  if(tab==='prive'){
+    convList.style.display='block';
+    window.renderChatConvList();
+    if(allUsers.length) window.openChatConv('messages_'+(allUsers[0].uid||allUsers[0].id)+'_manager',allUsers[0].displayName||allUsers[0].email||'Agent');
+  } else {
+    convList.style.display='none';
+    const col=tab==='urgences'?'messages_urgences':'messages_global';
+    window.openChatConv(col,tab==='urgences'?'🚨 Urgences':'🌐 Canal Global');
+  }
+};
+
+window.sendChatMsg=async function(){
+  const input=document.getElementById('chat-input');
+  const txt=input?.value?.trim();
+  if(!txt) return;
+  input.value='';
+  try{await addDoc(collection(db,chatConv),{contenu:txt,type:'normal',sender_id:ME.id,sender_nom:ME.nom,created_at:serverTimestamp()});}
+  catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+window.sendUrgentChat=async function(){
+  const input=document.getElementById('chat-input');
+  const txt=input?.value?.trim()||'⚠️ ALERTE URGENCE';
+  input&&(input.value='');
+  try{await addDoc(collection(db,chatConv),{contenu:txt,type:'urgent',sender_id:ME.id,sender_nom:ME.nom,created_at:serverTimestamp()});}
+  catch(e){toast('Erreur: '+e.message,'var(--red)');}
+};
+
+setTimeout(()=>window.openChatConv('messages_global','🌐 Canal Global'),800);
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+let lastMsgIds=new Set(),notifCount=0;
+function showNotifPopup(msg,convCol,convName){
+  if(msg.sender_id===ME.id) return;
+  const stack=document.getElementById('notif-stack');
+  const isUrgent=msg.type==='urgent';
+  const sender=msg.sender_nom||'Agent';
+  const init=sender.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  const time=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const id='notif-'+Date.now()+'-'+(notifCount++);
+  const el=document.createElement('div');
+  el.className='notif-popup'+(isUrgent?' urgent':'');
+  el.id=id;
+  el.innerHTML=`<div class="notif-progress${isUrgent?' urgent':''}"></div>
+    <div class="notif-header">
+      <div class="notif-avatar${isUrgent?' urgent':''}">${init}</div>
+      <div class="notif-sender">${isUrgent?'🚨 ':''}${sender}</div>
+      <div class="notif-time">${time}</div>
+      <button class="notif-close" onclick="closeNotif('${id}')">✕</button>
+    </div>
+    <div class="notif-body">
+      <div class="notif-msg${isUrgent?' urgent':''}">${msg.contenu||'—'}</div>
+      <div class="notif-actions">
+        <button class="notif-btn" onclick="closeNotif('${id}')">Ignorer</button>
+        <button class="notif-btn primary" onclick="openConvFromNotif('${convCol}','${convName}','${id}')">Répondre →</button>
+      </div>
+    </div>`;
+  stack.appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+  setTimeout(()=>closeNotif(id),5000);
+}
+
+window.closeNotif=function(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('show');
+  setTimeout(()=>el.remove(),300);
+};
+
+window.openConvFromNotif=function(col,name,notifId){
+  closeNotif(notifId);
+  document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));
+  const tabs=document.querySelectorAll('.chat-tab');
+  if(tabs[2]) tabs[2].classList.add('active');
+  document.getElementById('chat-conv-list').style.display='block';
+  window.renderChatConvList();
+  window.openChatConv(col,name);
+};
+
+const watchedCols=new Set();
+function watchCol(col,name){
+  if(watchedCols.has(col)) return;
+  watchedCols.add(col);
+  onSnapshot(query(collection(db,col),orderBy('created_at','desc')),snap=>{
+    snap.docs.slice(0,1).forEach(d=>{
+      const msg={id:d.id,...d.data()};
+      if(!lastMsgIds.has(msg.id)&&lastMsgIds.size>0) showNotifPopup(msg,col,name);
+      lastMsgIds.add(msg.id);
+    });
+  });
+}
+
+function watchPrivateChats(users){
+  users.forEach(u=>{
+    const uid=u.uid||u.id;
+    watchCol('messages_'+uid+'_manager',u.displayName||u.email||'Agent');
+  });
+}
+
+setTimeout(()=>{
+  watchCol('messages_global','🌐 Canal Global');
+  watchCol('messages_urgences','🚨 Urgences');
+},1500);
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+window.showTab=function(tab,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  el.classList.add('active');
+  if(tab==='carte'&&gmapFull){
+    setTimeout(()=>{google.maps.event.trigger(gmapFull,'resize');gmapFull.setCenter({lat:46.6,lng:2.3});},100);
+  }
+};
+
+// ── EXPORT PDF ────────────────────────────────────────────────────────────────
+window.exportPDF=function(){
+  const{jsPDF}=window.jspdf;
+  const d=new jsPDF({orientation:'landscape',format:'a4'});
+  d.setFillColor(7,8,10);d.rect(0,0,297,210,'F');
+  d.setFont('helvetica','bold');d.setFontSize(18);d.setTextColor(201,168,76);
+  d.text('FlowAlert — Main Courante',20,20);
+  d.setFontSize(9);d.setTextColor(136,146,164);
+  d.text('Généré le '+new Date().toLocaleDateString('fr-FR')+' à '+new Date().toLocaleTimeString('fr-FR'),20,28);
+  const complets=allSignalements.filter(e=>e.type_incident||e.type);
+  d.text('Utilisateurs: '+allUsers.length,20,40);
+  d.text('Signalements ouverts: '+complets.filter(e=>e.statut==='ouvert'||!e.statut).length,80,40);
+  d.text('Total: '+complets.length,220,40);
+  d.setFontSize(11);d.setTextColor(232,234,240);d.text('Journal des signalements',20,54);
+  let y=62;
+  d.setFontSize(8);d.setTextColor(69,77,92);
+  d.text('DATE',20,y);d.text('HEURE',50,y);d.text('TYPE',75,y);d.text('GRAVITÉ',115,y);d.text('LIEU',145,y);d.text('DESCRIPTION',195,y);d.text('STATUT',270,y);
+  y+=4;d.line(20,y,277,y);y+=5;
+  complets.slice(0,20).forEach(e=>{
+    if(y>195){d.addPage();y=20;}
+    const ts=e.create_at||e.created_at;
+    const date=e.date_label||(ts?.toDate?ts.toDate().toLocaleDateString('fr-FR'):'—');
+    const h=e.heure_label||(ts?.toDate?ts.toDate().toLocaleTimeString('fr-FR'):'—');
+    const sev=e.severity||e.niveau||0;
+    d.setTextColor(136,146,164);d.setFontSize(8);
+    d.text(date.slice(0,10),20,y);d.text(h,50,y);
+    d.text((e.type||e.type_incident||'—').slice(0,16),75,y);
+    d.text(sevLabels[sev]||'—',115,y);
+    d.text((e.lieu||'—').slice(0,18),145,y);
+    d.text((e.description||'—').slice(0,35),195,y);
+    d.text(e.statut==='resolu'?'Résolu':'Ouvert',270,y);
+    y+=7;d.line(20,y-2,277,y-2);
+  });
+  d.save('flowalert_main_courante_'+new Date().toISOString().slice(0,10)+'.pdf');
+  toast('PDF exporté ✓','var(--green)');
+};
+</script>
+</body>
+</html>
