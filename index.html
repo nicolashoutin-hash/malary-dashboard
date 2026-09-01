@@ -244,8 +244,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 <div class="login-screen" id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-badge">FA</div>
-      <div><div class="login-title">FlowAlert</div><div class="login-sub">Dashboard Manager · Malary</div></div>
+      <div class="login-logo-badge" id="login-badge">FA</div>
+      <div><div class="login-title" id="login-title">FlowAlert</div><div class="login-sub">Dashboard Manager · Malary</div></div>
     </div>
     <div class="login-field">
       <label class="login-label">Email</label>
@@ -263,8 +263,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 <div id="app" style="display:none;flex-direction:column;height:100%;">
 <div class="topbar">
   <div class="topbar-left">
-    <div class="logo-badge">FA</div>
-    <div class="page-title">FlowAlert — Dashboard Manager</div>
+    <div class="logo-badge" id="topbar-badge">FA</div>
+    <div class="page-title" id="page-title">FlowAlert — Dashboard Manager</div>
     <div class="live-badge"><div class="live-dot"></div>Temps réel</div>
     <div class="fb-badge" id="fb-status">Connexion…</div>
     <div class="scope-badge" id="scope-badge" style="display:none;">🏢 <span id="scope-label">—</span></div>
@@ -280,8 +280,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
   <div class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-row">
-        <div class="logo-badge">FA</div>
-        <div><div class="logo-name">FlowAlert</div><div class="logo-sub">Manager · Malary</div></div>
+        <div class="logo-badge" id="sidebar-badge">FA</div>
+        <div><div class="logo-name" id="logo-name">FlowAlert</div><div class="logo-sub">Manager · Malary</div></div>
       </div>
     </div>
     <nav class="sidebar-nav">
@@ -300,7 +300,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <div class="sidebar-bottom">
       <div class="user-card">
         <div class="user-avatar">MG</div>
-        <div><div class="user-name">Manager</div><div class="user-role">FlowAlert · Malary</div></div>
+        <div><div class="user-name">Manager</div><div class="user-role" id="user-role">FlowAlert · Malary</div></div>
       </div>
     </div>
   </div>
@@ -551,14 +551,31 @@ import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,updateP
 import{initializeApp as initializeApp2}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth as getAuth2,createUserWithEmailAndPassword as createUserWithEmailAndPassword2}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-const firebaseConfig={
-  apiKey:"AIzaSyBjcAEGYHbhddyrg5bEgnXUq_mWSwe27cw",
-  authDomain:"flowalert-82de1.firebaseapp.com",
-  projectId:"flowalert-82de1",
-  storageBucket:"flowalert-82de1.firebasestorage.app",
-  messagingSenderId:"983126758574",
-  appId:"1:983126758574:web:bf2c8ebbf83f5a9e48493f"
+// ── Un onglet par Flow dans Vision peut ouvrir ce Dashboard Manager avec
+// ?product=<clé>. Chaque produit a son propre projet Firebase. Pour ajouter un
+// nouveau Flow (FlowSite, FlowSafe...) une fois son projet Firebase créé : ajouter
+// une entrée ici avec sa config web (Firebase Console → Paramètres du projet → Application Web).
+const PRODUCTS={
+  flowalert:{key:'flowalert',badge:'FA',name:'FlowAlert',firebaseConfig:{
+    apiKey:"AIzaSyBjcAEGYHbhddyrg5bEgnXUq_mWSwe27cw",
+    authDomain:"flowalert-82de1.firebaseapp.com",
+    projectId:"flowalert-82de1",
+    storageBucket:"flowalert-82de1.firebasestorage.app",
+    messagingSenderId:"983126758574",
+    appId:"1:983126758574:web:bf2c8ebbf83f5a9e48493f"
+  }},
+  flowcity:{key:'flowcity',badge:'FC',name:'FlowCity',firebaseConfig:{
+    apiKey:"AIzaSyCx9SMFhCp-w-VGK38SqEqhSGpQ4Rt53R8",
+    authDomain:"flow-city-mmqh3t.firebaseapp.com",
+    projectId:"flow-city-mmqh3t",
+    storageBucket:"flow-city-mmqh3t.firebasestorage.app",
+    messagingSenderId:"318622427671",
+    appId:"1:318622427671:web:f38bdeb12b5276a6478a52"
+  }}
 };
+const urlParamsBoot=new URLSearchParams(window.location.search);
+const CURRENT_PRODUCT=PRODUCTS[urlParamsBoot.get('product')]||PRODUCTS.flowalert;
+const firebaseConfig=CURRENT_PRODUCT.firebaseConfig;
 
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
@@ -566,7 +583,19 @@ const auth=getAuth(app);
 const appSecondary=initializeApp2(firebaseConfig,'secondary');
 const authSecondary=getAuth2(appSecondary);
 
-const ME={id:'manager',nom:'Manager FlowAlert'};
+function applyBranding(){
+  document.title=CURRENT_PRODUCT.name+' — Dashboard Manager';
+  document.getElementById('login-badge').textContent=CURRENT_PRODUCT.badge;
+  document.getElementById('login-title').textContent=CURRENT_PRODUCT.name;
+  document.getElementById('topbar-badge').textContent=CURRENT_PRODUCT.badge;
+  document.getElementById('page-title').textContent=CURRENT_PRODUCT.name+' — Dashboard Manager';
+  document.getElementById('sidebar-badge').textContent=CURRENT_PRODUCT.badge;
+  document.getElementById('logo-name').textContent=CURRENT_PRODUCT.name;
+  document.getElementById('user-role').textContent=CURRENT_PRODUCT.name+' · Malary';
+}
+applyBranding();
+
+const ME={id:'manager',nom:'Manager '+CURRENT_PRODUCT.name};
 let chatConv='messages_global',chatConvName='📡 Canal Equipe',unsubChat=null;
 let unsubUsers=null,unsubSignalements=null,unsubEvents=null,unsubLicences=null;
 let allSignalements=[],allUsers=[],allLicences=[];
@@ -1280,7 +1309,7 @@ window.exportPDF=function(){
   const d=new jsPDF({orientation:'landscape',format:'a4'});
   d.setFillColor(7,8,10);d.rect(0,0,297,210,'F');
   d.setFont('helvetica','bold');d.setFontSize(18);d.setTextColor(201,168,76);
-  d.text('FlowAlert — Rapport signalements',20,20);
+  d.text(CURRENT_PRODUCT.name+' — Rapport signalements',20,20);
   d.setFontSize(9);d.setTextColor(136,146,164);
   d.text('Généré le '+new Date().toLocaleDateString('fr-FR')+' à '+new Date().toLocaleTimeString('fr-FR'),20,28);
   const complets=allSignalements.filter(e=>e.type&&e.type!=='Signalement');
