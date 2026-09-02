@@ -713,20 +713,20 @@ window.doLogin=async function(){
   const btn=document.getElementById('login-btn');
   const err=document.getElementById('login-error');
   err.style.display='none';btn.disabled=true;btn.textContent='Connexion…';
+  // Un vrai client n'a un compte QUE sur le projet Firebase du produit (créé par Vision via
+  // authSecondary) — jamais sur malary-identite. On tente donc dataAuth en premier (ça couvre
+  // aussi l'admin Malary, dont le compte a été répliqué sur ce même projet). Si ça échoue, on
+  // retente sur malary-identite (auth) pour distinguer "mauvais identifiants" de "admin connu
+  // sur malary-identite mais pas encore répliqué sur ce projet de données".
   try{
-    await signInWithEmailAndPassword(auth,email,pwd);
-  }catch(e){
-    err.textContent='Erreur : '+e.message;err.style.display='block';
-    btn.disabled=false;btn.textContent='Se connecter';
-    return;
-  }
-  try{
-    // Ouvre aussi une session sur le projet Firebase du produit actif, avec les mêmes
-    // identifiants, pour que les lectures/écritures Firestore soient autorisées par les
-    // règles de sécurité de ce projet (voir commentaire sur dataAuth plus haut).
     await signInWithEmailAndPassword(dataAuth,email,pwd);
-  }catch(e2){
-    err.textContent='Connecté, mais accès aux données '+CURRENT_PRODUCT.name+' refusé : le compte '+email+' n\'existe pas (ou mot de passe différent) sur le projet Firebase "'+CURRENT_PRODUCT.firebaseConfig.projectId+'". À créer dans Firebase Console → ce projet → Authentication → Users, avec le même mot de passe.';
+  }catch(e){
+    try{
+      await signInWithEmailAndPassword(auth,email,pwd);
+      err.textContent='Connecté comme admin Malary, mais accès aux données '+CURRENT_PRODUCT.name+' refusé : le compte '+email+' n\'existe pas (ou mot de passe différent) sur le projet Firebase "'+CURRENT_PRODUCT.firebaseConfig.projectId+'". À créer dans Firebase Console → ce projet → Authentication → Users, avec le même mot de passe.';
+    }catch(e2){
+      err.textContent='Identifiants incorrects';
+    }
     err.style.display='block';
     btn.disabled=false;btn.textContent='Se connecter';
     return;
@@ -747,7 +747,7 @@ window.doLogin=async function(){
 
 window.doLogout=async function(){
   [unsubUsers,unsubSignalements,unsubEvents,unsubChat,unsubLicences].forEach(u=>{if(u)u();});
-  await signOut(auth);
+  try{await signOut(auth);}catch(e){}
   try{await signOut(dataAuth);}catch(e){}
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
