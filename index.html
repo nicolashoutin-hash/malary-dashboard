@@ -555,6 +555,16 @@ import{getAuth as getAuth2,createUserWithEmailAndPassword as createUserWithEmail
 // ?product=<clé>. Chaque produit a son propre projet Firebase. Pour ajouter un
 // nouveau Flow (FlowSite, FlowSafe...) une fois son projet Firebase créé : ajouter
 // une entrée ici avec sa config web (Firebase Console → Paramètres du projet → Application Web).
+// ── Identité admin Malary : projet Firebase dédié (malary-identite), indépendant
+// des projets des Flows — compte interne dashboard@malary.eu.
+const AUTH_CONFIG={
+  apiKey:"AIzaSyCYba_gBYv2mT-BzyjZ-oxbgCNhNfIDav8",
+  authDomain:"malary-identite.firebaseapp.com",
+  projectId:"malary-identite",
+  storageBucket:"malary-identite.firebasestorage.app",
+  messagingSenderId:"558400867996",
+  appId:"1:558400867996:web:e3b6d6cc79516d87efa759"
+};
 const PRODUCTS={
   flowalert:{key:'flowalert',badge:'FA',name:'FlowAlert',firebaseConfig:{
     apiKey:"AIzaSyBjcAEGYHbhddyrg5bEgnXUq_mWSwe27cw",
@@ -575,12 +585,13 @@ const PRODUCTS={
 };
 const urlParamsBoot=new URLSearchParams(window.location.search);
 const CURRENT_PRODUCT=PRODUCTS[urlParamsBoot.get('product')]||PRODUCTS.flowalert;
-const firebaseConfig=CURRENT_PRODUCT.firebaseConfig;
-
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
-const auth=getAuth(app);
-const appSecondary=initializeApp2(firebaseConfig,'secondary');
+// Connexion admin (auth) : toujours sur AUTH_CONFIG. Données (db) + création des comptes
+// clients (authSecondary) : sur le projet Firebase du produit actif.
+const authApp=initializeApp(AUTH_CONFIG,'dashboard-auth');
+const auth=getAuth(authApp);
+const dataApp=initializeApp(CURRENT_PRODUCT.firebaseConfig,'dashboard-data');
+const db=getFirestore(dataApp);
+const appSecondary=initializeApp2(CURRENT_PRODUCT.firebaseConfig,'dashboard-secondary');
 const authSecondary=getAuth2(appSecondary);
 
 function applyBranding(){
