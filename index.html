@@ -296,6 +296,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
       <div class="nav-item" onclick="showTab('rapports',this)">📄 &nbsp;Rapports</div>
       <div class="nav-sec">Admin</div>
       <div class="nav-item" onclick="showTab('licences',this)">🔑 &nbsp;Licences</div>
+                <div class="nav-sec" id="nav-sec-ecole" style="display:none;">École</div>
+                <div class="nav-item" id="nav-pointages" onclick="showTab('pointages',this);loadPointages()" style="display:none;">🕐 &nbsp;Pointages</div>
     </nav>
     <div class="sidebar-bottom">
       <div class="user-card">
@@ -421,6 +423,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         </table>
       </div>
     </div>
+            <div class="tab-content" id="tab-pointages">
+                        <div class="card">
+                                      <div class="card-header">
+                                                      <div class="card-title">Pointages élèves</div>
+                                                      <div style="display:flex;align-items:center;gap:8px;">
+                                                                        <button class="btn" onclick="changePointageDate(-1)">←</button>
+                                                                        <span id="pointage-date-label" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);"></span>span>
+                                                                        <button class="btn" onclick="changePointageDate(1)">→</button>
+                                                      </div>
+                                      </div>
+                                      <table class="rapport-table" style="width:100%">
+                                                      <thead><tr><th>Classe</th><th>Arrivée</th><th>Départ</th><th>Statut</th></tr></thead>
+                                                    <tbody id="pointage-table-body"></tbody>
+                                      </table>
+                        </div>
+            </div>
   </div>
 
   <div class="chat-panel">
@@ -708,6 +726,69 @@ function applyScopeBadge(){
   const badge=document.getElementById('scope-badge');
   const label=document.getElementById('scope-label');
   if(CLIENT_ID){label.textContent=CLIENT_ID;badge.style.display='flex';}
+
+        if(CURRENT_PRODUCT.key==='flowschool'){
+                  const ns=document.getElementById('nav-sec-ecole');
+                  const np=document.getElementById('nav-pointages');
+                  if(ns) ns.style.display='block';
+                  if(np) np.style.display='flex';
+        }
+
+        let pointageDate=new Date();
+        let unsubPointages=null;
+        function fmtDateISO(d){
+                  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        }
+        function fmtDateLabel(d){
+                  return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+        }
+        window.changePointageDate=function(delta){
+                  pointageDate.setDate(pointageDate.getDate()+delta);
+                  loadPointages();
+        };
+        async function loadPointages(){
+                  const lbl=document.getElementById('pointage-date-label');
+                  if(lbl) lbl.textContent=fmtDateLabel(pointageDate);
+                  const dateStr=fmtDateISO(pointageDate);
+                  if(unsubPointages){unsubPointages();unsubPointages=null;}
+                  let classes=[];
+                  try{
+                              const classesSnap=await getDocs(query(collection(db,'classes'),where('client_id','==',CLIENT_ID),orderBy('ordre')));
+                              classes=classesSnap.docs.map(d=>({id:d.id,...d.data()}));
+                  }catch(e){
+                              console.error('loadPointages classes error',e);
+                  }
+                  const tbody=document.getElementById('pointage-table-body');
+                  if(!tbody) return;
+                  unsubPointages=onSnapshot(
+                              query(collection(db,'pointages'),where('client_id','==',CLIENT_ID),where('date','==',dateStr)),
+                              snap=>{
+                                            const byClasse={};
+                                            snap.docs.forEach(docu=>{
+                                                            const p=docu.data();
+                                                            byClasse[p.classe_id]=byClasse[p.classe_id]||{};
+                                                            byClasse[p.classe_id][p.type]=p.timestamp;
+                                            });
+                                            const fmtHeure=ts=>ts&&ts.seconds?new Date(ts.seconds*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
+                                            if(classes.length===0){
+                                                            tbody.innerHTML='<tr><td colspan="4">Aucune classe configurée</td></tr>';
+                                                            return;
+                                            }
+                                            tbody.innerHTML=classes.map(c=>{
+                                                            const rec=byClasse[c.id]||{};
+                                                            const arr=fmtHeure(rec.arrivee);
+                                                            const dep=fmtHeure(rec.depart);
+                                                            const statut=rec.arrivee&&rec.depart?'Terminé':(rec.arrivee?'Arrivée seule':'Pas pointé');
+                                                            return '<tr><td>'+(c.nom||'')+'</td><td>'+arr+'</td><td>'+dep+'</td><td>'+statut+'</td></tr>';
+                                            }).join('');
+                              },
+                              err=>{
+                                            console.error('loadPointages snapshot error',err);
+                                            tbody.innerHTML='<tr><td colspan="4">Erreur de chargement</td></tr>';
+                              }
+                            );
+        }
+        window.loadPointages=loadPointages;
 }
 
 function belongsToClient(data){
