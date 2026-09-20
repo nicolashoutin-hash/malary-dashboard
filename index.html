@@ -287,7 +287,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <nav class="sidebar-nav">
       <div class="nav-sec">Vue globale</div>
       <div class="nav-item active" onclick="showTab('dashboard',this)">⬡ &nbsp;Tableau de bord</div>
-      <div class="nav-item" onclick="showTab('carte',this)">🗺 &nbsp;Carte plein écran</div>
+            <div class="nav-item" id="nav-carte" onclick="showTab('carte',this)">🗺️ &nbsp;Carte plein écran</div>
       <div class="nav-sec">Opérations</div>
       <div class="nav-item" onclick="showTab('incidents',this)">⚡ &nbsp;Incidents <span class="nav-badge" id="nav-incidents">0</span></div>
       <div class="nav-item" onclick="showTab('agents',this)">👥 &nbsp;Utilisateurs</div>
@@ -316,7 +316,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         <div class="metric-card" style="--accent:var(--amber)"><div class="metric-label">Licences actives</div><div class="metric-value" id="m-licences">—</div><div class="metric-sub" id="m-licences-sub">—</div></div>
       </div>
       <div class="main-grid">
-        <div class="card">
+                <div class="card" id="card-carte-dashboard">
           <div class="card-header"><div class="card-title">Carte terrain</div><div class="card-sub" id="map-update">—</div></div>
           <div id="gmap-dashboard" style="height:260px;width:100%;"></div>
           <div class="map-legend">
@@ -732,6 +732,10 @@ function applyScopeBadge(){
                   const np=document.getElementById('nav-pointages');
                   if(ns) ns.style.display='block';
                   if(np) np.style.display='flex';
+                  const nc=document.getElementById('nav-carte');
+                  const cc=document.getElementById('card-carte-dashboard');
+                  if(nc) nc.style.display='none';
+                  if(cc) cc.style.display='none';
         }
 
         let pointageDate=new Date();
@@ -944,7 +948,8 @@ function normalizeDoc(id,data){
   const ts=data.created_at||data.create_at||null;
   return{id,...data,_ts:ts,
     type:data.type||data.type_incident||'Signalement',
-    adresse:data.adresse||data.lieu||'—',
+      adresse:data.adresse||data.lieu||data.zone_nom||'-',
+               classe:data.zone_nom||data.lieu||null,
     user_email:data.user_email||data.userEmail||data.user_id||'—'
   };
 }
