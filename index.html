@@ -732,6 +732,9 @@ function applyScopeBadge(){
                   const np=document.getElementById('nav-pointages');
                   if(ns) ns.style.display='block';
                   if(np) np.style.display='flex';
+        }
+
+        if(CURRENT_PRODUCT.key!=='flowalert' && CURRENT_PRODUCT.key!=='flowcity'){
                   const nc=document.getElementById('nav-carte');
                   const cc=document.getElementById('card-carte-dashboard');
                   if(nc) nc.style.display='none';
