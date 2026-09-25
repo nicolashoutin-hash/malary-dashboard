@@ -717,9 +717,12 @@ if(window._gmapReady) window.renderMapMarkers();
 // ── Client scoping ───────────────────────────────────────────────────────────
 const urlParams=new URLSearchParams(window.location.search);
 const urlClientId=urlParams.get('client_id');
+const MALARY_ADMIN_EMAIL='dashboard@malary.eu';
 
 async function resolveClientId(){
-  if(urlClientId){CLIENT_ID=urlClientId;return;}
+  // ?client_id= (mode intervention depuis Vision) : réservé au compte admin Malary.
+  // Un client ne peut plus afficher un autre client en changeant l'URL.
+  if(urlClientId&&dataAuth.currentUser?.email===MALARY_ADMIN_EMAIL){CLIENT_ID=urlClientId;return;}
   // admin_uid (sur le doc "clients") est l'UID créé par Vision via authSecondary, donc sur
   // le projet Firebase de données (dataAuth) — pas sur malary-identite (auth).
   const uid=dataAuth.currentUser?.uid;
@@ -886,8 +889,19 @@ function onSnapErr(label){
   return err=>toast('Erreur de lecture "'+label+'" : '+err.message,'var(--red)');
 }
 function startListeners(){
-  unsubUsers=onSnapshot(collection(db,'users'),snap=>{
-    allUsers=snap.docs.map(d=>({id:d.id,...d.data()})).filter(belongsToClient);
+  // Filtre côté serveur : seuls les comptes du client sont téléchargés.
+  // Deux requêtes (client_id et companyId, anciens comptes) fusionnées par id.
+  const _usersBy={a:[],b:[]};
+  const onUsers=which=>snap=>{
+    _usersBy[which]=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const m=new Map();[..._usersBy.a,..._usersBy.b].forEach(u=>m.set(u.id,u));
+    renderUsers([...m.values()]);
+  };
+  const unsubU1=onSnapshot(query(collection(db,'users'),where('client_id','==',CLIENT_ID)),onUsers('a'),onSnapErr('users'));
+  const unsubU2=onSnapshot(query(collection(db,'users'),where('companyId','==',CLIENT_ID)),onUsers('b'),onSnapErr('users'));
+  unsubUsers=()=>{unsubU1();unsubU2();};
+  function renderUsers(list){
+    allUsers=list;
     const plans={free:0,pro:0,enterprise:0};
     allUsers.forEach(u=>{const p=u.plan||'free';plans[p]=(plans[p]||0)+1;});
     const licActives=(plans.pro||0)+(plans.enterprise||0);
@@ -915,34 +929,18 @@ function startListeners(){
       <div class="bar-item"><span class="bar-label">${k}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${v/tot*100}%;background:${planColors[k]||'var(--text3)'}"></div></div>
       <span class="bar-val">${v}</span></div>`).join('');
-  },onSnapErr('users'));
+  }
 
-  unsubSignalements=onSnapshot(query(collection(db,'signalements'),orderBy('created_at','desc')),snap=>{
-    const newDocs=snap.docs.map(d=>normalizeDoc(d.id,d.data())).filter(belongsToClient);
+  unsubSignalements=onSnapshot(query(collection(db,'signalements'),where('client_id','==',CLIENT_ID)),snap=>{
+    const newDocs=snap.docs.map(d=>normalizeDoc(d.id,d.data()));
     newDocs.forEach(e=>{e._collection='signalements';});
     allSignalements=allSignalements.filter(e=>e._collection==='events');
     allSignalements=[...newDocs,...allSignalements];
     sortAndRender();
   },onSnapErr('signalements'));
 
-  unsubEvents=onSnapshot(query(collection(db,'events'),orderBy('create_at','desc')),snap=>{
-    const legacyDocs=snap.docs.map(d=>normalizeDoc(d.id,d.data())).filter(belongsToClient);
-    legacyDocs.forEach(e=>{e._collection='events';});
-    allSignalements=allSignalements.filter(e=>e._collection==='signalements');
-    allSignalements=[...allSignalements,...legacyDocs];
-    sortAndRender();
-  },onSnapErr('events'));
-
-  const today=new Date();today.setHours(0,0,0,0);
-  const todayTs=Timestamp.fromDate(today);
-  let tc1=0,tc2=0;
-  const upd=()=>document.getElementById('m-signalements').textContent=tc1+tc2;
-  onSnapshot(query(collection(db,'signalements'),where('created_at','>=',todayTs)),s=>{
-    tc1=s.docs.map(d=>d.data()).filter(belongsToClient).length;upd();
-  },onSnapErr('signalements du jour'));
-  onSnapshot(query(collection(db,'events'),where('create_at','>=',todayTs)),s=>{
-    tc2=s.docs.map(d=>d.data()).filter(belongsToClient).length;upd();
-  },onSnapErr('events du jour'));
+  // Collection "events" (legacy, obsolète) : plus lue. Le compteur "Incidents aujourd'hui"
+  // est calculé dans sortAndRender() à partir des signalements déjà filtrés par client.
 
   unsubLicences=onSnapshot(query(collection(db,'licences'),where('client_id','==',CLIENT_ID)),snap=>{
     allLicences=snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -1009,6 +1007,9 @@ window.setRapportFilter=function(filter,btn){
 
 // ── Render signalements ───────────────────────────────────────────────────────
 function sortAndRender(){
+  const _today=new Date();_today.setHours(0,0,0,0);
+  const _cnt=allSignalements.filter(e=>e._ts?.toMillis&&e._ts.toMillis()>=_today.getTime()).length;
+  const _mEl=document.getElementById('m-signalements');if(_mEl) _mEl.textContent=_cnt;
   allSignalements.sort((a,b)=>{
     const ta=a._ts?.toMillis?a._ts.toMillis():0;
     const tb=b._ts?.toMillis?b._ts.toMillis():0;
@@ -1353,8 +1354,8 @@ window.openChatConv=function(col,name){
   chatConv=col;chatConvName=name;
   document.getElementById('chat-conv-label').textContent='→ '+name;
   if(unsubChat) unsubChat();
-  unsubChat=onSnapshot(query(collection(db,col),orderBy('created_at')),snap=>{
-    const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(belongsToClient);
+  unsubChat=onSnapshot(query(collection(db,col),where('client_id','==',CLIENT_ID)),snap=>{
+    const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>_msgTs(a)-_msgTs(b));
     renderChatMessages(msgs);
   });
 };
@@ -1441,14 +1442,14 @@ window.toggleNotifs=function(){
 };
 window.closeNotif=function(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('show');setTimeout(()=>el.remove(),300);};
 
+function _msgTs(m){const t=m.created_at||m.create_at;return t?.toMillis?t.toMillis():Date.now();}
 const watchedCols=new Set();
 function watchCol(col){
   if(watchedCols.has(col)) return;
   watchedCols.add(col);
-  onSnapshot(query(collection(db,col),orderBy('created_at','desc')),snap=>{
-    snap.docs.slice(0,1).forEach(d=>{
-      const msg={id:d.id,...d.data()};
-      if(!belongsToClient(msg)) return;
+  onSnapshot(query(collection(db,col),where('client_id','==',CLIENT_ID)),snap=>{
+    const docs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>_msgTs(b)-_msgTs(a));
+    docs.slice(0,1).forEach(msg=>{
       if(!lastMsgIds.has(msg.id)&&lastMsgIds.size>0) showNotifPopup(msg);
       lastMsgIds.add(msg.id);
     });
