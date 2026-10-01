@@ -300,6 +300,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
       <div class="nav-item" onclick="showTab('rapports',this)">📄 &nbsp;Rapports</div>
       <div class="nav-sec">Admin</div>
       <div class="nav-item" onclick="showTab('licences',this)">🔑 &nbsp;Licences</div>
+      <div class="nav-sec" id="nav-sec-site" style="display:none;">Chantier</div>
+      <div class="nav-item" id="nav-zones" onclick="showTab('zones',this)" style="display:none;">📍 &nbsp;Zones</div>
                 <div class="nav-sec" id="nav-sec-ecole" style="display:none;">École</div>
                 <div class="nav-item" id="nav-pointages" onclick="showTab('pointages',this);loadPointages()" style="display:none;">🕐 &nbsp;Pointages</div>
     </nav>
@@ -427,6 +429,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         </table>
       </div>
     </div>
+
+    <div class="tab-content" id="tab-zones">
+      <div class="create-user-card">
+        <div class="create-user-title">📍 Gestion des zones du chantier</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nom de la zone *</label>
+            <input class="form-input" id="zone-new-name" type="text" placeholder="Ex. Zone A – Gros œuvre" onkeydown="if(event.key==='Enter')addZone()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ordre</label>
+            <input class="form-input" id="zone-new-order" type="number" min="1" step="1" placeholder="1">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-or" onclick="addZone()">+ Ajouter la zone</button>
+          <div id="zone-status" style="font-size:10px;color:var(--text3);"></div>
+        </div>
+      </div>
+      <div class="users-table-wrapper">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;display:flex;justify-content:space-between;">
+          <span>Zones configurées</span><span id="zones-total" style="color:var(--text3);font-size:9px;font-weight:400;font-family:'DM Mono',monospace;">—</span>
+        </div>
+        <table class="rapport-table" style="width:100%">
+          <thead><tr><th>Ordre</th><th>Nom</th><th>Client</th><th>Actions</th></tr></thead>
+          <tbody id="zones-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
             <div class="tab-content" id="tab-pointages">
                         <div class="card">
                                       <div class="card-header">
@@ -742,6 +774,13 @@ function applyScopeBadge(){
   const label=document.getElementById('scope-label');
   if(CLIENT_ID){label.textContent=CLIENT_ID;badge.style.display='flex';}
 
+        if(CURRENT_PRODUCT.key==='flowsite'){
+                  const ns=document.getElementById('nav-sec-site');
+                  const nz=document.getElementById('nav-zones');
+                  if(ns) ns.style.display='block';
+                  if(nz) nz.style.display='flex';
+        }
+
         if(CURRENT_PRODUCT.key==='flowschool'){
                   const ns=document.getElementById('nav-sec-ecole');
                   const np=document.getElementById('nav-pointages');
@@ -755,6 +794,105 @@ function applyScopeBadge(){
                   if(nc) nc.style.display='none';
                   if(cc) cc.style.display='none';
         }
+
+        let allZones=[];
+        let unsubZones=null;
+
+        function renderZones(){
+                  const tbody=document.getElementById('zones-table-body');
+                  const total=document.getElementById('zones-total');
+                  if(!tbody) return;
+                  const zones=[...allZones].sort((a,b)=>(Number(a.ordre)||999)-(Number(b.ordre)||999)||String(a.nom||'').localeCompare(String(b.nom||''),'fr'));
+                  if(total) total.textContent=zones.length+' zone'+(zones.length>1?'s':'');
+                  if(!zones.length){
+                            tbody.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3);">Aucune zone configurée pour ce client.</td></tr>';
+                            return;
+                  }
+                  tbody.innerHTML=zones.map(z=>`
+                            <tr>
+                                      <td style="width:90px"><input class="form-input" id="zone-order-${z.id}" type="number" min="1" step="1" value="${Number(z.ordre)||''}" style="width:72px;padding:6px 8px;"></td>
+                                      <td><input class="form-input" id="zone-name-${z.id}" value="${escapeHtml(z.nom||'')}" style="width:100%;padding:6px 8px;"></td>
+                                      <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${escapeHtml(z.client_id||'')}</td>
+                                      <td style="white-space:nowrap">
+                                                <button class="btn" onclick="saveZone('${z.id}')">Enregistrer</button>
+                                                <button class="btn" onclick="deleteZone('${z.id}')" style="color:var(--red);border-color:rgba(248,113,113,.3);margin-left:5px;">Supprimer</button>
+                                      </td>
+                            </tr>`).join('');
+        }
+
+        window.loadZones=function(){
+                  if(CURRENT_PRODUCT.key!=='flowsite'||!CLIENT_ID) return;
+                  if(unsubZones){unsubZones();unsubZones=null;}
+                  const tbody=document.getElementById('zones-table-body');
+                  if(tbody) tbody.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3);">Chargement…</td></tr>';
+                  unsubZones=onSnapshot(
+                            query(collection(db,'zones'),where('client_id','==',CLIENT_ID)),
+                            snap=>{
+                                      allZones=snap.docs.map(d=>({id:d.id,...d.data()}));
+                                      renderZones();
+                            },
+                            err=>{
+                                      console.error('loadZones error',err);
+                                      if(tbody) tbody.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--red);">Impossible de charger les zones.</td></tr>';
+                            }
+                  );
+        };
+
+        window.addZone=async function(){
+                  if(CURRENT_PRODUCT.key!=='flowsite'||!CLIENT_ID) return;
+                  const name=document.getElementById('zone-new-name')?.value.trim();
+                  const orderRaw=document.getElementById('zone-new-order')?.value;
+                  const status=document.getElementById('zone-status');
+                  if(!name){if(status){status.textContent='Nom de zone obligatoire.';status.style.color='var(--red)';}return;}
+                  let ordre=Number(orderRaw);
+                  if(!Number.isFinite(ordre)||ordre<1){
+                            ordre=allZones.reduce((m,z)=>Math.max(m,Number(z.ordre)||0),0)+1;
+                  }
+                  try{
+                            await addDoc(collection(db,'zones'),{
+                                      client_id:CLIENT_ID,
+                                      nom:name,
+                                      ordre,
+                                      created_at:serverTimestamp()
+                            });
+                            document.getElementById('zone-new-name').value='';
+                            document.getElementById('zone-new-order').value='';
+                            if(status){status.textContent='Zone ajoutée.';status.style.color='var(--green)';}
+                            toast('Zone ajoutée','var(--green)');
+                  }catch(e){
+                            console.error('addZone error',e);
+                            if(status){status.textContent='Erreur lors de la création.';status.style.color='var(--red)';}
+                            toast('Impossible d’ajouter la zone','var(--red)');
+                  }
+        };
+
+        window.saveZone=async function(id){
+                  const name=document.getElementById('zone-name-'+id)?.value.trim();
+                  const ordre=Number(document.getElementById('zone-order-'+id)?.value);
+                  if(!name){toast('Nom de zone obligatoire','var(--red)');return;}
+                  try{
+                            await updateDoc(doc(db,'zones',id),{
+                                      nom:name,
+                                      ordre:Number.isFinite(ordre)&&ordre>0?ordre:1
+                            });
+                            toast('Zone mise à jour','var(--green)');
+                  }catch(e){
+                            console.error('saveZone error',e);
+                            toast('Impossible de modifier la zone','var(--red)');
+                  }
+        };
+
+        window.deleteZone=async function(id){
+                  const z=allZones.find(x=>x.id===id);
+                  if(!confirm('Supprimer la zone « '+(z?.nom||'')+' » ?')) return;
+                  try{
+                            await deleteDoc(doc(db,'zones',id));
+                            toast('Zone supprimée','var(--green)');
+                  }catch(e){
+                            console.error('deleteZone error',e);
+                            toast('Impossible de supprimer la zone','var(--red)');
+                  }
+        };
 
         let pointageDate=new Date();
         let unsubPointages=null;
@@ -1493,6 +1631,7 @@ window.showTab=function(tab,el){
   document.getElementById('tab-'+tab).classList.add('active');
   el.classList.add('active');
   if(tab==='carte'&&window.gmapFull){setTimeout(()=>{google.maps.event.trigger(window.gmapFull,'resize');window.gmapFull.setCenter({lat:46.6,lng:2.3});},100);}
+  if(tab==='zones'&&CURRENT_PRODUCT.key==='flowsite') loadZones();
 };
 
 // ── Export Excel ─────────────────────────────────────────────────────────────
