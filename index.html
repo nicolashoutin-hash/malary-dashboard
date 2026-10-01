@@ -6,6 +6,7 @@
 <title>FlowAlert — Dashboard Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#07080a;--bg2:#0d0f12;--bg3:#141619;--bg4:#1c1f24;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--text:#e8eaf0;--text2:#8892a4;--text3:#454d5c;--or:#C9A84C;--or2:#E8C97A;--or-bg:rgba(201,168,76,0.08);--or-border:rgba(201,168,76,0.2);--green:#34d399;--green-bg:rgba(52,211,153,0.08);--red:#f87171;--red-bg:rgba(248,113,113,0.08);--blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);--amber:#fbbf24;--amber-bg:rgba(251,191,36,0.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -211,6 +212,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 .create-user-card{background:var(--bg2);border:1px solid var(--or-border);border-radius:9px;padding:16px 20px;margin-bottom:16px;}
 .create-user-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--or);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .users-table-wrapper{background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+#tab-licences{overflow-y:auto;padding-bottom:48px;}
+#tab-licences .users-table-wrapper{overflow:auto;max-height:48vh;}
 .dossier-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .15s;}
 .dossier-card:hover{border-color:var(--or-border);}
 .dossier-card-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);}
@@ -271,7 +274,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
   </div>
   <div class="topbar-right">
     <div class="clock" id="clock">--:--:--</div>
-    <button class="topbar-btn" onclick="exportPDF()">↓ Exporter PDF</button>
+    <button class="topbar-btn" onclick="exportPDF()">↓ PDF</button>
+    <button class="topbar-btn" onclick="exportExcel()">↓ Excel</button>
     <button class="topbar-btn logout" onclick="doLogout()">Déconnexion</button>
   </div>
 </div>
@@ -406,7 +410,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Nom complet</label><input class="form-input" id="new-name" type="text" placeholder="Prénom Nom"></div>
-          <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="new-role"><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+          <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="new-role"><option value="equipier">Équipier</option><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:4px;align-items:center;">
           <button class="btn btn-or" onclick="createUser()" id="create-btn">+ Créer et attribuer une licence</button>
@@ -514,7 +518,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group"><label class="form-label">Plan</label><select class="form-select" id="edit-plan"><option value="free">Free</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
-        <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="edit-role"><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+        <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="edit-role"><option value="equipier">Équipier</option><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
       </div>
       <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Company ID</label><input class="form-input" id="edit-company" type="text"></div>
       <div style="display:flex;gap:8px;"><button class="btn btn-or" onclick="saveEditUser()" style="flex:1;">Sauvegarder</button><button class="btn btn-red" onclick="closeEditModal()">Annuler</button></div>
@@ -860,6 +864,9 @@ window.doLogin=async function(){
     document.getElementById('app').style.display='flex';
     document.getElementById('fb-status').textContent='Connecté — '+email;
     applyScopeBadge();
+    lastMsgIds.clear();
+    watchedCols.clear();
+    renderChatMessages([]);
     startListeners();
     setTimeout(()=>window.openChatConv('messages_global','📡 Canal Équipe'),800);
   }catch(e){
@@ -870,6 +877,11 @@ window.doLogin=async function(){
 
 window.doLogout=async function(){
   [unsubUsers,unsubSignalements,unsubEvents,unsubChat,unsubLicences].forEach(u=>{if(u)u();});
+  watchedUnsubs.splice(0).forEach(u=>{try{u();}catch(e){}});
+  watchedCols.clear();
+  lastMsgIds.clear();
+  renderChatMessages([]);
+  CLIENT_ID=null;
   try{await signOut(auth);}catch(e){}
   try{await signOut(dataAuth);}catch(e){}
   document.getElementById('app').style.display='none';
@@ -1444,16 +1456,18 @@ window.closeNotif=function(id){const el=document.getElementById(id);if(!el)retur
 
 function _msgTs(m){const t=m.created_at||m.create_at;return t?.toMillis?t.toMillis():Date.now();}
 const watchedCols=new Set();
+const watchedUnsubs=[];
 function watchCol(col){
   if(watchedCols.has(col)) return;
   watchedCols.add(col);
-  onSnapshot(query(collection(db,col),where('client_id','==',CLIENT_ID)),snap=>{
+  const unsub=onSnapshot(query(collection(db,col),where('client_id','==',CLIENT_ID)),snap=>{
     const docs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>_msgTs(b)-_msgTs(a));
     docs.slice(0,1).forEach(msg=>{
       if(!lastMsgIds.has(msg.id)&&lastMsgIds.size>0) showNotifPopup(msg);
       lastMsgIds.add(msg.id);
     });
   });
+  watchedUnsubs.push(unsub);
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -1463,6 +1477,37 @@ window.showTab=function(tab,el){
   document.getElementById('tab-'+tab).classList.add('active');
   el.classList.add('active');
   if(tab==='carte'&&window.gmapFull){setTimeout(()=>{google.maps.event.trigger(window.gmapFull,'resize');window.gmapFull.setCenter({lat:46.6,lng:2.3});},100);}
+};
+
+// ── Export Excel ─────────────────────────────────────────────────────────────
+window.exportExcel=function(){
+  const complets=allSignalements.filter(e=>e.type&&e.type!=='Signalement');
+  let filtered=complets;
+  if(_rapportFilter==='faible') filtered=complets.filter(e=>(e.severity||e.niveau||0)===1);
+  else if(_rapportFilter==='moyen') filtered=complets.filter(e=>(e.severity||e.niveau||0)===2);
+  else if(_rapportFilter==='eleve') filtered=complets.filter(e=>(e.severity||e.niveau||0)===3);
+
+  const rows=filtered.map(e=>{
+    const ts=e._ts;
+    const dt=ts?.toDate?ts.toDate():null;
+    const sev=e.severity||e.niveau||0;
+    return{
+      Date:dt?dt.toLocaleDateString('fr-FR'):'',
+      Heure:dt?dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
+      Type:e.type||'',
+      Gravité:sevLabels[sev]||'',
+      Lieu:e.adresse||e.lieu||e.zone_nom||'',
+      Collaborateur:e.user_email||'',
+      Description:e.description||'',
+      Statut:e.statut==='resolu'?'Résolu':e.statut==='en_cours'?'En cours':'Ouvert'
+    };
+  });
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:8},{wch:24},{wch:12},{wch:28},{wch:30},{wch:50},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws,'Signalements');
+  XLSX.writeFile(wb,CURRENT_PRODUCT.key+'_rapport_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Excel exporté','var(--green)');
 };
 
 // ── Export PDF ────────────────────────────────────────────────────────────────
@@ -1500,7 +1545,7 @@ window.exportPDF=function(){
     d.text(e.statut==='resolu'?'Resolu':'Ouvert',260,y);
     y+=7;d.line(20,y-2,277,y-2);
   });
-  d.save('flowalert_rapport_'+new Date().toISOString().slice(0,10)+'.pdf');
+  d.save(CURRENT_PRODUCT.key+'_rapport_'+new Date().toISOString().slice(0,10)+'.pdf');
   toast('PDF exporté','var(--green)');
 };
 </script>
