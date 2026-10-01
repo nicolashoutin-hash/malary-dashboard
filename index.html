@@ -819,18 +819,34 @@ function belongsToClient(data){
   return CLIENT_ID==='malary-demo';
 }
 
-function getFirstPhotoUrl(e){
-  if(e.photo_url&&e.photo_url!=='') return e.photo_url;
-  if(e.photo_urls&&Array.isArray(e.photo_urls)&&e.photo_urls.length>0&&e.photo_urls[0]!=='') return e.photo_urls[0];
-  if(e.photos&&Array.isArray(e.photos)&&e.photos.length>0&&e.photos[0]!=='') return e.photos[0];
-  return null;
+function _collectPhotoUrls(value,urls){
+  if(!value) return;
+  if(typeof value==='string'){
+    if(value.trim()) urls.add(value.trim());
+    return;
+  }
+  if(Array.isArray(value)){
+    value.forEach(v=>_collectPhotoUrls(v,urls));
+    return;
+  }
+  if(typeof value==='object'){
+    ['url','downloadURL','downloadUrl','photo_url','photoUrl','image_url','imageUrl'].forEach(k=>{
+      if(value[k]) _collectPhotoUrls(value[k],urls);
+    });
+  }
 }
 function getAllPhotoUrls(e){
   const urls=new Set();
-  if(e.photo_url&&e.photo_url!=='') urls.add(e.photo_url);
-  if(e.photo_urls&&Array.isArray(e.photo_urls)) e.photo_urls.filter(Boolean).forEach(u=>urls.add(u));
-  if(e.photos&&Array.isArray(e.photos)) e.photos.filter(Boolean).forEach(u=>urls.add(u));
+  [
+    e.photo_url,e.photo_urls,e.photos,e.photoUrl,e.photoUrls,
+    e.image_url,e.image_urls,e.imageUrl,e.imageUrls,
+    e.media_urls,e.mediaUrls,e.attachments,e.pieces_jointes
+  ].forEach(v=>_collectPhotoUrls(v,urls));
   return [...urls];
+}
+function getFirstPhotoUrl(e){
+  const urls=getAllPhotoUrls(e);
+  return urls.length?urls[0]:null;
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
