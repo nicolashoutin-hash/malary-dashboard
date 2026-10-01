@@ -695,6 +695,17 @@ function applyBranding(){
   document.getElementById('sidebar-badge').textContent=CURRENT_PRODUCT.badge;
   document.getElementById('logo-name').textContent=CURRENT_PRODUCT.name;
   document.getElementById('user-role').textContent=CURRENT_PRODUCT.name+' · Malary';
+
+  // Navigation produit : affichée dès le chargement, indépendamment du client_id.
+  const siteSec=document.getElementById('nav-sec-site');
+  const zonesNav=document.getElementById('nav-zones');
+  if(CURRENT_PRODUCT.key==='flowsite'){
+    if(siteSec) siteSec.style.display='block';
+    if(zonesNav) zonesNav.style.display='flex';
+  }else{
+    if(siteSec) siteSec.style.display='none';
+    if(zonesNav) zonesNav.style.display='none';
+  }
 }
 applyBranding();
 
