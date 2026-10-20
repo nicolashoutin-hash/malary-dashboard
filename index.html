@@ -6,7 +6,6 @@
 <title>FlowAlert — Dashboard Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#07080a;--bg2:#0d0f12;--bg3:#141619;--bg4:#1c1f24;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--text:#e8eaf0;--text2:#8892a4;--text3:#454d5c;--or:#C9A84C;--or2:#E8C97A;--or-bg:rgba(201,168,76,0.08);--or-border:rgba(201,168,76,0.2);--green:#34d399;--green-bg:rgba(52,211,153,0.08);--red:#f87171;--red-bg:rgba(248,113,113,0.08);--blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);--amber:#fbbf24;--amber-bg:rgba(251,191,36,0.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -212,8 +211,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 .create-user-card{background:var(--bg2);border:1px solid var(--or-border);border-radius:9px;padding:16px 20px;margin-bottom:16px;}
 .create-user-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--or);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .users-table-wrapper{background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
-#tab-licences{overflow-y:auto;padding-bottom:48px;}
-#tab-licences .users-table-wrapper{overflow:auto;max-height:48vh;}
 .dossier-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .15s;}
 .dossier-card:hover{border-color:var(--or-border);}
 .dossier-card-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);}
@@ -274,8 +271,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
   </div>
   <div class="topbar-right">
     <div class="clock" id="clock">--:--:--</div>
-    <button class="topbar-btn" onclick="exportPDF()">↓ PDF</button>
-    <button class="topbar-btn" onclick="exportExcel()">↓ Excel</button>
+    <button class="topbar-btn" onclick="exportPDF()">↓ Exporter PDF</button>
     <button class="topbar-btn logout" onclick="doLogout()">Déconnexion</button>
   </div>
 </div>
@@ -291,7 +287,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <nav class="sidebar-nav">
       <div class="nav-sec">Vue globale</div>
       <div class="nav-item active" onclick="showTab('dashboard',this)">⬡ &nbsp;Tableau de bord</div>
-            <div class="nav-item" id="nav-carte" onclick="showTab('carte',this)">🗺️ &nbsp;Carte plein écran</div>
+      <div class="nav-item" onclick="showTab('carte',this)">🗺 &nbsp;Carte plein écran</div>
       <div class="nav-sec">Opérations</div>
       <div class="nav-item" onclick="showTab('incidents',this)">⚡ &nbsp;Incidents <span class="nav-badge" id="nav-incidents">0</span></div>
       <div class="nav-item" onclick="showTab('agents',this)">👥 &nbsp;Utilisateurs</div>
@@ -300,10 +296,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
       <div class="nav-item" onclick="showTab('rapports',this)">📄 &nbsp;Rapports</div>
       <div class="nav-sec">Admin</div>
       <div class="nav-item" onclick="showTab('licences',this)">🔑 &nbsp;Licences</div>
-      <div class="nav-sec" id="nav-sec-site" style="display:none;">Chantier</div>
-      <div class="nav-item" id="nav-zones" onclick="showTab('zones',this)" style="display:none;">📍 &nbsp;Zones</div>
-                <div class="nav-sec" id="nav-sec-ecole" style="display:none;">École</div>
-                <div class="nav-item" id="nav-pointages" onclick="showTab('pointages',this);loadPointages()" style="display:none;">🕐 &nbsp;Pointages</div>
     </nav>
     <div class="sidebar-bottom">
       <div class="user-card">
@@ -322,7 +314,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         <div class="metric-card" style="--accent:var(--amber)"><div class="metric-label">Licences actives</div><div class="metric-value" id="m-licences">—</div><div class="metric-sub" id="m-licences-sub">—</div></div>
       </div>
       <div class="main-grid">
-                <div class="card" id="card-carte-dashboard">
+        <div class="card">
           <div class="card-header"><div class="card-title">Carte terrain</div><div class="card-sub" id="map-update">—</div></div>
           <div id="gmap-dashboard" style="height:260px;width:100%;"></div>
           <div class="map-legend">
@@ -412,7 +404,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Nom complet</label><input class="form-input" id="new-name" type="text" placeholder="Prénom Nom"></div>
-          <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="new-role"><option value="equipier">Équipier</option><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+          <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="new-role"><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:4px;align-items:center;">
           <button class="btn btn-or" onclick="createUser()" id="create-btn">+ Créer et attribuer une licence</button>
@@ -429,52 +421,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
         </table>
       </div>
     </div>
-
-    <div class="tab-content" id="tab-zones">
-      <div class="create-user-card">
-        <div class="create-user-title">📍 Gestion des zones du chantier</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Nom de la zone *</label>
-            <input class="form-input" id="zone-new-name" type="text" placeholder="Ex. Zone A – Gros œuvre" onkeydown="if(event.key==='Enter')addZone()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Ordre</label>
-            <input class="form-input" id="zone-new-order" type="number" min="1" step="1" placeholder="1">
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn btn-or" onclick="addZone()">+ Ajouter la zone</button>
-          <div id="zone-status" style="font-size:10px;color:var(--text3);"></div>
-        </div>
-      </div>
-      <div class="users-table-wrapper">
-        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;display:flex;justify-content:space-between;">
-          <span>Zones configurées</span><span id="zones-total" style="color:var(--text3);font-size:9px;font-weight:400;font-family:'DM Mono',monospace;">—</span>
-        </div>
-        <table class="rapport-table" style="width:100%">
-          <thead><tr><th>Ordre</th><th>Nom</th><th>Client</th><th>Actions</th></tr></thead>
-          <tbody id="zones-table-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-            <div class="tab-content" id="tab-pointages">
-                        <div class="card">
-                                      <div class="card-header">
-                                                      <div class="card-title">Pointages élèves</div>
-                                                      <div style="display:flex;align-items:center;gap:8px;">
-                                                                        <button class="btn" onclick="changePointageDate(-1)">←</button>
-                                                                        <span id="pointage-date-label" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);"></span>span>
-                                                                        <button class="btn" onclick="changePointageDate(1)">→</button>
-                                                      </div>
-                                      </div>
-                                      <table class="rapport-table" style="width:100%">
-                                                      <thead><tr><th>Classe</th><th>Arrivée</th><th>Départ</th><th>Statut</th></tr></thead>
-                                                    <tbody id="pointage-table-body"></tbody>
-                                      </table>
-                        </div>
-            </div>
   </div>
 
   <div class="chat-panel">
@@ -550,7 +496,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group"><label class="form-label">Plan</label><select class="form-select" id="edit-plan"><option value="free">Free</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
-        <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="edit-role"><option value="equipier">Équipier</option><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+        <div class="form-group"><label class="form-label">Rôle</label><select class="form-select" id="edit-role"><option value="agent">Agent terrain</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
       </div>
       <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Company ID</label><input class="form-input" id="edit-company" type="text"></div>
       <div style="display:flex;gap:8px;"><button class="btn btn-or" onclick="saveEditUser()" style="flex:1;">Sauvegarder</button><button class="btn btn-red" onclick="closeEditModal()">Annuler</button></div>
@@ -573,7 +519,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 
 <!-- Script global : uniquement Maps -->
 <script>
-window.gmapDashboard=null;window.gmapFull=null;let allMarkers=[];
+let gmapDashboard=null,gmapFull=null,allMarkers=[];
 // allSignalements et allUsers sont déclarés dans le module ES
 
 function initGoogleMaps(){
@@ -588,19 +534,24 @@ function initGoogleMaps(){
   ]};
   const d=document.getElementById('gmap-dashboard');
   const f=document.getElementById('gmap-fullscreen');
-  if(d) window.gmapDashboard=new google.maps.Map(d,opts);
-  if(f) window.gmapFull=new google.maps.Map(f,{...opts,zoom:7});
+  if(d) gmapDashboard=new google.maps.Map(d,opts);
+  if(f) gmapFull=new google.maps.Map(f,{...opts,zoom:7});
   // renderMapMarkers sera appelé depuis le module via window.renderMapMarkers
   if(window._mapReady) window.renderMapMarkers();
   else window._gmapReady=true;
 }
 window.initGoogleMaps=initGoogleMaps;
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJgeak2GjL3t2holmQnDbrhslnK67xNVo&callback=initGoogleMaps"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEOkpbWDHNu5M2Gb4m-wVt1fKCqtkxnBo&callback=initGoogleMaps"></script>
 
 <script type="module">
+// DashboardManager v2 — Finalisation avant déploiement — Copie de travail (NE PAS DÉPLOYER SANS VALIDATION MALARY)
+// M09: B-02 sender_id via auth.currentUser.uid
+// M10: B-03 delete via CF, B-04/B-05 updateStatut via CF, P2 isMine via auth.currentUser.uid
+// M11: P3 belongsToClient via CURRENT_ROLE (Firestore, non sentinel), getDoc importé
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,query,orderBy,serverTimestamp,doc,where,Timestamp,setDoc,getDocs}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,collection,onSnapshot,addDoc,updateDoc,deleteDoc,query,orderBy,serverTimestamp,doc,where,Timestamp,setDoc,getDocs,getDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFunctions,httpsCallable}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
 import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,updateProfile,signOut}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import{initializeApp as initializeApp2}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth as getAuth2,createUserWithEmailAndPassword as createUserWithEmailAndPassword2}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -609,16 +560,6 @@ import{getAuth as getAuth2,createUserWithEmailAndPassword as createUserWithEmail
 // ?product=<clé>. Chaque produit a son propre projet Firebase. Pour ajouter un
 // nouveau Flow (FlowSite, FlowSafe...) une fois son projet Firebase créé : ajouter
 // une entrée ici avec sa config web (Firebase Console → Paramètres du projet → Application Web).
-// ── Identité admin Malary : projet Firebase dédié (malary-identite), indépendant
-// des projets des Flows — compte interne dashboard@malary.eu.
-const AUTH_CONFIG={
-  apiKey:"AIzaSyCYba_gBYv2mT-BzyjZ-oxbgCNhNfIDav8",
-  authDomain:"malary-identite.firebaseapp.com",
-  projectId:"malary-identite",
-  storageBucket:"malary-identite.firebasestorage.app",
-  messagingSenderId:"558400867996",
-  appId:"1:558400867996:web:e3b6d6cc79516d87efa759"
-};
 const PRODUCTS={
   flowalert:{key:'flowalert',badge:'FA',name:'FlowAlert',firebaseConfig:{
     apiKey:"AIzaSyBjcAEGYHbhddyrg5bEgnXUq_mWSwe27cw",
@@ -635,55 +576,18 @@ const PRODUCTS={
     storageBucket:"flow-city-mmqh3t.firebasestorage.app",
     messagingSenderId:"318622427671",
     appId:"1:318622427671:web:f38bdeb12b5276a6478a52"
-  }},
-      flowsite:{key:'flowsite',badge:'FS',name:'FlowSite',firebaseConfig:{
-              apiKey:"AIzaSyC1HuDV4FC22h1M4isbwKg6szmpS7P--vk",
-              authDomain:"flowsite-55a16.firebaseapp.com",
-              projectId:"flowsite-55a16",
-              storageBucket:"flowsite-55a16.firebasestorage.app",
-              messagingSenderId:"850713829167",
-              appId:"1:850713829167:web:a8c5023a42d06839808bda"
-  }},
-      flowsafe:{key:'flowsafe',badge:'SF',name:'FlowSafe',firebaseConfig:{
-              apiKey:"AIzaSyApIoBVYJpdqTDc6EbHG7i5fRyj_TQoN_U",
-              authDomain:"flowsafe-a0cde.firebaseapp.com",
-              projectId:"flowsafe-a0cde",
-              storageBucket:"flowsafe-a0cde.firebasestorage.app",
-              messagingSenderId:"794535122171",
-              appId:"1:794535122171:web:8436d120c8102499d68c5e"
-      }},
-      flowschool:{key:'flowschool',badge:'FE',name:'FlowSchool',firebaseConfig:{
-              apiKey:"AIzaSyDS2OeH-YIzX3cSQ3VTvZbdXPcAe7YCFN0",
-              authDomain:"flowschool-becce.firebaseapp.com",
-              projectId:"flowschool-becce",
-              storageBucket:"flowschool-becce.firebasestorage.app",
-              messagingSenderId:"341872571218",
-              appId:"1:341872571218:web:2a73fdbdaf5ae9f08d008b"
-      }},
-      flowhotel:{key:'flowhotel',badge:'FH',name:'FlowHotel',firebaseConfig:{
-              apiKey:"AIzaSyDBKQA23tI08p2rzDhbJw3fIlU8xeEi2l4",
-              authDomain:"flowhotel-3abb3.firebaseapp.com",
-              projectId:"flowhotel-3abb3",
-              storageBucket:"flowhotel-3abb3.firebasestorage.app",
-              messagingSenderId:"727491880500",
-              appId:"1:727491880500:web:37ace0df0ceed51dea4c61"
-      }}
+  }}
 };
 const urlParamsBoot=new URLSearchParams(window.location.search);
 const CURRENT_PRODUCT=PRODUCTS[urlParamsBoot.get('product')]||PRODUCTS.flowalert;
-// Connexion admin (auth) : toujours sur AUTH_CONFIG (malary-identite). Données (db) +
-// création des comptes clients (authSecondary) : sur le projet Firebase du produit actif.
-// ⚠️ malary-identite est un projet Firebase séparé du projet de données (flowalert-82de1,
-// flow-city-mmqh3t...) : un jeton délivré par malary-identite n'est PAS reconnu par les
-// règles de sécurité Firestore du projet de données. Il faut donc aussi ouvrir une session
-// sur le projet de données lui-même (dataAuth ci-dessous) avec les mêmes identifiants,
-// sinon toute lecture/écriture échoue avec "Missing or insufficient permissions".
-const authApp=initializeApp(AUTH_CONFIG,'dashboard-auth');
-const auth=getAuth(authApp);
-const dataApp=initializeApp(CURRENT_PRODUCT.firebaseConfig,'dashboard-data');
-const db=getFirestore(dataApp);
-const dataAuth=getAuth(dataApp);
-const appSecondary=initializeApp2(CURRENT_PRODUCT.firebaseConfig,'dashboard-secondary');
+const firebaseConfig=CURRENT_PRODUCT.firebaseConfig;
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const auth=getAuth(app);
+const functions=getFunctions(app,'europe-west1');
+const adminFn=name=>httpsCallable(functions,name);
+const appSecondary=initializeApp2(firebaseConfig,'secondary');
 const authSecondary=getAuth2(appSecondary);
 
 function applyBranding(){
@@ -695,21 +599,11 @@ function applyBranding(){
   document.getElementById('sidebar-badge').textContent=CURRENT_PRODUCT.badge;
   document.getElementById('logo-name').textContent=CURRENT_PRODUCT.name;
   document.getElementById('user-role').textContent=CURRENT_PRODUCT.name+' · Malary';
-
-  // Navigation produit : affichée dès le chargement, indépendamment du client_id.
-  const siteSec=document.getElementById('nav-sec-site');
-  const zonesNav=document.getElementById('nav-zones');
-  if(CURRENT_PRODUCT.key==='flowsite'){
-    if(siteSec) siteSec.style.display='block';
-    if(zonesNav) zonesNav.style.display='flex';
-  }else{
-    if(siteSec) siteSec.style.display='none';
-    if(zonesNav) zonesNav.style.display='none';
-  }
 }
 applyBranding();
 
 const ME={id:'manager',nom:'Manager '+CURRENT_PRODUCT.name};
+let CURRENT_ROLE=''; // rôle lu depuis Firestore après connexion (malary_admin | client_admin | user)
 let chatConv='messages_global',chatConvName='📡 Canal Equipe',unsubChat=null;
 let unsubUsers=null,unsubSignalements=null,unsubEvents=null,unsubLicences=null;
 let allSignalements=[],allUsers=[],allLicences=[];
@@ -739,7 +633,7 @@ window.renderMapMarkers=function(){
     if(!lat||!lng||(lat===0&&lng===0)) return;
     const sev=e.severity||e.niveau||1;
     const color=cols[sev]||'#C9A84C';
-    [window.gmapDashboard,window.gmapFull].forEach(map=>{
+    [gmapDashboard,gmapFull].forEach(map=>{
       if(!map) return;
       const marker=new google.maps.Marker({
         position:{lat:parseFloat(lat),lng:parseFloat(lng)},map,
@@ -764,15 +658,10 @@ if(window._gmapReady) window.renderMapMarkers();
 // ── Client scoping ───────────────────────────────────────────────────────────
 const urlParams=new URLSearchParams(window.location.search);
 const urlClientId=urlParams.get('client_id');
-const MALARY_ADMIN_EMAIL='dashboard@malary.eu';
 
 async function resolveClientId(){
-  // ?client_id= (mode intervention depuis Vision) : réservé au compte admin Malary.
-  // Un client ne peut plus afficher un autre client en changeant l'URL.
-  if(urlClientId&&dataAuth.currentUser?.email===MALARY_ADMIN_EMAIL){CLIENT_ID=urlClientId;return;}
-  // admin_uid (sur le doc "clients") est l'UID créé par Vision via authSecondary, donc sur
-  // le projet Firebase de données (dataAuth) — pas sur malary-identite (auth).
-  const uid=dataAuth.currentUser?.uid;
+  if(urlClientId){CLIENT_ID=urlClientId;return;}
+  const uid=auth.currentUser?.uid;
   if(!uid){CLIENT_ID='malary-demo';return;}
   try{
     const snap=await getDocs(query(collection(db,'clients'),where('admin_uid','==',uid)));
@@ -784,227 +673,29 @@ function applyScopeBadge(){
   const badge=document.getElementById('scope-badge');
   const label=document.getElementById('scope-label');
   if(CLIENT_ID){label.textContent=CLIENT_ID;badge.style.display='flex';}
-
-        if(CURRENT_PRODUCT.key==='flowsite'){
-                  const ns=document.getElementById('nav-sec-site');
-                  const nz=document.getElementById('nav-zones');
-                  if(ns) ns.style.display='block';
-                  if(nz) nz.style.display='flex';
-        }
-
-        if(CURRENT_PRODUCT.key==='flowschool'){
-                  const ns=document.getElementById('nav-sec-ecole');
-                  const np=document.getElementById('nav-pointages');
-                  if(ns) ns.style.display='block';
-                  if(np) np.style.display='flex';
-        }
-
-        if(CURRENT_PRODUCT.key!=='flowalert' && CURRENT_PRODUCT.key!=='flowcity'){
-                  const nc=document.getElementById('nav-carte');
-                  const cc=document.getElementById('card-carte-dashboard');
-                  if(nc) nc.style.display='none';
-                  if(cc) cc.style.display='none';
-        }
-
-        let allZones=[];
-        let unsubZones=null;
-
-        function escapeHtml(value){
-                  return String(value??'')
-                            .replaceAll('&','&amp;')
-                            .replaceAll('<','&lt;')
-                            .replaceAll('>','&gt;')
-                            .replaceAll('"','&quot;')
-                            .replaceAll("'","&#039;");
-        }
-
-        function renderZones(){
-                  const tbody=document.getElementById('zones-table-body');
-                  const total=document.getElementById('zones-total');
-                  if(!tbody) return;
-                  const zones=[...allZones].sort((a,b)=>(Number(a.ordre)||999)-(Number(b.ordre)||999)||String(a.nom||'').localeCompare(String(b.nom||''),'fr'));
-                  if(total) total.textContent=zones.length+' zone'+(zones.length>1?'s':'');
-                  if(!zones.length){
-                            tbody.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3);">Aucune zone configurée pour ce client.</td></tr>';
-                            return;
-                  }
-                  tbody.innerHTML=zones.map(z=>`
-                            <tr>
-                                      <td style="width:90px"><input class="form-input" id="zone-order-${z.id}" type="number" min="1" step="1" value="${Number(z.ordre)||''}" style="width:72px;padding:6px 8px;"></td>
-                                      <td><input class="form-input" id="zone-name-${z.id}" value="${escapeHtml(z.nom||'')}" style="width:100%;padding:6px 8px;"></td>
-                                      <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${escapeHtml(z.client_id||'')}</td>
-                                      <td style="white-space:nowrap">
-                                                <button class="btn" onclick="saveZone('${z.id}')">Enregistrer</button>
-                                                <button class="btn" onclick="deleteZone('${z.id}')" style="color:var(--red);border-color:rgba(248,113,113,.3);margin-left:5px;">Supprimer</button>
-                                      </td>
-                            </tr>`).join('');
-        }
-
-        window.loadZones=function(){
-                  if(CURRENT_PRODUCT.key!=='flowsite'||!CLIENT_ID) return;
-                  if(unsubZones){unsubZones();unsubZones=null;}
-                  const tbody=document.getElementById('zones-table-body');
-                  if(tbody) tbody.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3);">Chargement…</td></tr>';
-                  unsubZones=onSnapshot(
-                            query(collection(db,'zones'),where('client_id','==',CLIENT_ID)),
-                            snap=>{
-                                      allZones=snap.docs.map(d=>({id:d.id,...d.data()}));
-                                      renderZones();
-                            },
-                            err=>{
-                                      console.error('loadZones error',err);
-                                      if(tbody) tbody.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--red);">Impossible de charger les zones.</td></tr>';
-                            }
-                  );
-        };
-
-        window.addZone=async function(){
-                  if(CURRENT_PRODUCT.key!=='flowsite'||!CLIENT_ID) return;
-                  const name=document.getElementById('zone-new-name')?.value.trim();
-                  const orderRaw=document.getElementById('zone-new-order')?.value;
-                  const status=document.getElementById('zone-status');
-                  if(!name){if(status){status.textContent='Nom de zone obligatoire.';status.style.color='var(--red)';}return;}
-                  let ordre=Number(orderRaw);
-                  if(!Number.isFinite(ordre)||ordre<1){
-                            ordre=allZones.reduce((m,z)=>Math.max(m,Number(z.ordre)||0),0)+1;
-                  }
-                  try{
-                            await addDoc(collection(db,'zones'),{
-                                      client_id:CLIENT_ID,
-                                      nom:name,
-                                      ordre,
-                                      created_at:serverTimestamp()
-                            });
-                            document.getElementById('zone-new-name').value='';
-                            document.getElementById('zone-new-order').value='';
-                            if(status){status.textContent='Zone ajoutée.';status.style.color='var(--green)';}
-                            toast('Zone ajoutée','var(--green)');
-                  }catch(e){
-                            console.error('addZone error',e);
-                            if(status){status.textContent='Erreur lors de la création.';status.style.color='var(--red)';}
-                            toast('Impossible d’ajouter la zone','var(--red)');
-                  }
-        };
-
-        window.saveZone=async function(id){
-                  const name=document.getElementById('zone-name-'+id)?.value.trim();
-                  const ordre=Number(document.getElementById('zone-order-'+id)?.value);
-                  if(!name){toast('Nom de zone obligatoire','var(--red)');return;}
-                  try{
-                            await updateDoc(doc(db,'zones',id),{
-                                      nom:name,
-                                      ordre:Number.isFinite(ordre)&&ordre>0?ordre:1
-                            });
-                            toast('Zone mise à jour','var(--green)');
-                  }catch(e){
-                            console.error('saveZone error',e);
-                            toast('Impossible de modifier la zone','var(--red)');
-                  }
-        };
-
-        window.deleteZone=async function(id){
-                  const z=allZones.find(x=>x.id===id);
-                  if(!confirm('Supprimer la zone « '+(z?.nom||'')+' » ?')) return;
-                  try{
-                            await deleteDoc(doc(db,'zones',id));
-                            toast('Zone supprimée','var(--green)');
-                  }catch(e){
-                            console.error('deleteZone error',e);
-                            toast('Impossible de supprimer la zone','var(--red)');
-                  }
-        };
-
-        let pointageDate=new Date();
-        let unsubPointages=null;
-        function fmtDateISO(d){
-                  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        }
-        function fmtDateLabel(d){
-                  return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-        }
-        window.changePointageDate=function(delta){
-                  pointageDate.setDate(pointageDate.getDate()+delta);
-                  loadPointages();
-        };
-        async function loadPointages(){
-                  const lbl=document.getElementById('pointage-date-label');
-                  if(lbl) lbl.textContent=fmtDateLabel(pointageDate);
-                  const dateStr=fmtDateISO(pointageDate);
-                  if(unsubPointages){unsubPointages();unsubPointages=null;}
-                  let classes=[];
-                  try{
-                              const classesSnap=await getDocs(query(collection(db,'classes'),where('client_id','==',CLIENT_ID),orderBy('ordre')));
-                              classes=classesSnap.docs.map(d=>({id:d.id,...d.data()}));
-                  }catch(e){
-                              console.error('loadPointages classes error',e);
-                  }
-                  const tbody=document.getElementById('pointage-table-body');
-                  if(!tbody) return;
-                  unsubPointages=onSnapshot(
-                              query(collection(db,'pointages'),where('client_id','==',CLIENT_ID),where('date','==',dateStr)),
-                              snap=>{
-                                            const byClasse={};
-                                            snap.docs.forEach(docu=>{
-                                                            const p=docu.data();
-                                                            byClasse[p.classe_id]=byClasse[p.classe_id]||{};
-                                                            byClasse[p.classe_id][p.type]=p.timestamp;
-                                            });
-                                            const fmtHeure=ts=>ts&&ts.seconds?new Date(ts.seconds*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
-                                            if(classes.length===0){
-                                                            tbody.innerHTML='<tr><td colspan="4">Aucune classe configurée</td></tr>';
-                                                            return;
-                                            }
-                                            tbody.innerHTML=classes.map(c=>{
-                                                            const rec=byClasse[c.id]||{};
-                                                            const arr=fmtHeure(rec.arrivee);
-                                                            const dep=fmtHeure(rec.depart);
-                                                            const statut=rec.arrivee&&rec.depart?'Terminé':(rec.arrivee?'Arrivée seule':'Pas pointé');
-                                                            return '<tr><td>'+(c.nom||'')+'</td><td>'+arr+'</td><td>'+dep+'</td><td>'+statut+'</td></tr>';
-                                            }).join('');
-                              },
-                              err=>{
-                                            console.error('loadPointages snapshot error',err);
-                                            tbody.innerHTML='<tr><td colspan="4">Erreur de chargement</td></tr>';
-                              }
-                            );
-        }
-        window.loadPointages=loadPointages;
 }
 
 function belongsToClient(data){
+  // malary_admin : rôle vérifié depuis Firestore au login, pas une valeur de fallback
+  if(CURRENT_ROLE==='malary_admin') return true;
+  // client_admin : filtrage strict par tenant
   const cid=data.client_id||data.companyId||null;
   if(cid) return cid===CLIENT_ID;
-  return CLIENT_ID==='malary-demo';
+  return false;
 }
 
-function _collectPhotoUrls(value,urls){
-  if(!value) return;
-  if(typeof value==='string'){
-    if(value.trim()) urls.add(value.trim());
-    return;
-  }
-  if(Array.isArray(value)){
-    value.forEach(v=>_collectPhotoUrls(v,urls));
-    return;
-  }
-  if(typeof value==='object'){
-    ['url','downloadURL','downloadUrl','photo_url','photoUrl','image_url','imageUrl'].forEach(k=>{
-      if(value[k]) _collectPhotoUrls(value[k],urls);
-    });
-  }
+function getFirstPhotoUrl(e){
+  if(e.photo_url&&e.photo_url!=='') return e.photo_url;
+  if(e.photo_urls&&Array.isArray(e.photo_urls)&&e.photo_urls.length>0&&e.photo_urls[0]!=='') return e.photo_urls[0];
+  if(e.photos&&Array.isArray(e.photos)&&e.photos.length>0&&e.photos[0]!=='') return e.photos[0];
+  return null;
 }
 function getAllPhotoUrls(e){
   const urls=new Set();
-  [
-    e.photo_url,e.photo_urls,e.photos,e.photoUrl,e.photoUrls,
-    e.image_url,e.image_urls,e.imageUrl,e.imageUrls,
-    e.media_urls,e.mediaUrls,e.attachments,e.pieces_jointes
-  ].forEach(v=>_collectPhotoUrls(v,urls));
+  if(e.photo_url&&e.photo_url!=='') urls.add(e.photo_url);
+  if(e.photo_urls&&Array.isArray(e.photo_urls)) e.photo_urls.filter(Boolean).forEach(u=>urls.add(u));
+  if(e.photos&&Array.isArray(e.photos)) e.photos.filter(Boolean).forEach(u=>urls.add(u));
   return [...urls];
-}
-function getFirstPhotoUrl(e){
-  const urls=getAllPhotoUrls(e);
-  return urls.length?urls[0]:null;
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -1014,33 +705,19 @@ window.doLogin=async function(){
   const btn=document.getElementById('login-btn');
   const err=document.getElementById('login-error');
   err.style.display='none';btn.disabled=true;btn.textContent='Connexion…';
-  // Un vrai client n'a un compte QUE sur le projet Firebase du produit (créé par Vision via
-  // authSecondary) — jamais sur malary-identite. On tente donc dataAuth en premier (ça couvre
-  // aussi l'admin Malary, dont le compte a été répliqué sur ce même projet). Si ça échoue, on
-  // retente sur malary-identite (auth) pour distinguer "mauvais identifiants" de "admin connu
-  // sur malary-identite mais pas encore répliqué sur ce projet de données".
   try{
-    await signInWithEmailAndPassword(dataAuth,email,pwd);
-  }catch(e){
-    try{
-      await signInWithEmailAndPassword(auth,email,pwd);
-      err.textContent='Connecté comme admin Malary, mais accès aux données '+CURRENT_PRODUCT.name+' refusé : le compte '+email+' n\'existe pas (ou mot de passe différent) sur le projet Firebase "'+CURRENT_PRODUCT.firebaseConfig.projectId+'". À créer dans Firebase Console → ce projet → Authentication → Users, avec le même mot de passe.';
-    }catch(e2){
-      err.textContent='Identifiants incorrects';
-    }
-    err.style.display='block';
-    btn.disabled=false;btn.textContent='Se connecter';
-    return;
-  }
-  try{
+    await signInWithEmailAndPassword(auth,email,pwd);
     await resolveClientId();
+    // Lire le rôle depuis Firestore (source de vérité — ne pas se fier aux claims client)
+    try{
+      const uid=auth.currentUser?.uid;
+      const userSnap=uid?await getDoc(doc(db,'users',uid)):null;
+      CURRENT_ROLE=userSnap?.exists()?userSnap.data().role||'':'';
+    }catch(_){CURRENT_ROLE='';}
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
     document.getElementById('fb-status').textContent='Connecté — '+email;
     applyScopeBadge();
-    lastMsgIds.clear();
-    watchedCols.clear();
-    renderChatMessages([]);
     startListeners();
     setTimeout(()=>window.openChatConv('messages_global','📡 Canal Équipe'),800);
   }catch(e){
@@ -1051,13 +728,8 @@ window.doLogin=async function(){
 
 window.doLogout=async function(){
   [unsubUsers,unsubSignalements,unsubEvents,unsubChat,unsubLicences].forEach(u=>{if(u)u();});
-  watchedUnsubs.splice(0).forEach(u=>{try{u();}catch(e){}});
-  watchedCols.clear();
-  lastMsgIds.clear();
-  renderChatMessages([]);
-  CLIENT_ID=null;
-  try{await signOut(auth);}catch(e){}
-  try{await signOut(dataAuth);}catch(e){}
+  CURRENT_ROLE='';
+  await signOut(auth);
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('login-password').value='';
@@ -1071,23 +743,9 @@ function toast(msg,color='var(--or)'){
 setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-FR'),1000);
 
 // ── Listeners ────────────────────────────────────────────────────────────────
-function onSnapErr(label){
-  return err=>toast('Erreur de lecture "'+label+'" : '+err.message,'var(--red)');
-}
 function startListeners(){
-  // Filtre côté serveur : seuls les comptes du client sont téléchargés.
-  // Deux requêtes (client_id et companyId, anciens comptes) fusionnées par id.
-  const _usersBy={a:[],b:[]};
-  const onUsers=which=>snap=>{
-    _usersBy[which]=snap.docs.map(d=>({id:d.id,...d.data()}));
-    const m=new Map();[..._usersBy.a,..._usersBy.b].forEach(u=>m.set(u.id,u));
-    renderUsers([...m.values()]);
-  };
-  const unsubU1=onSnapshot(query(collection(db,'users'),where('client_id','==',CLIENT_ID)),onUsers('a'),onSnapErr('users'));
-  const unsubU2=onSnapshot(query(collection(db,'users'),where('companyId','==',CLIENT_ID)),onUsers('b'),onSnapErr('users'));
-  unsubUsers=()=>{unsubU1();unsubU2();};
-  function renderUsers(list){
-    allUsers=list;
+  unsubUsers=onSnapshot(collection(db,'users'),snap=>{
+    allUsers=snap.docs.map(d=>({id:d.id,...d.data()})).filter(belongsToClient);
     const plans={free:0,pro:0,enterprise:0};
     allUsers.forEach(u=>{const p=u.plan||'free';plans[p]=(plans[p]||0)+1;});
     const licActives=(plans.pro||0)+(plans.enterprise||0);
@@ -1115,23 +773,39 @@ function startListeners(){
       <div class="bar-item"><span class="bar-label">${k}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${v/tot*100}%;background:${planColors[k]||'var(--text3)'}"></div></div>
       <span class="bar-val">${v}</span></div>`).join('');
-  }
+  });
 
-  unsubSignalements=onSnapshot(query(collection(db,'signalements'),where('client_id','==',CLIENT_ID)),snap=>{
-    const newDocs=snap.docs.map(d=>normalizeDoc(d.id,d.data()));
+  unsubSignalements=onSnapshot(query(collection(db,'signalements'),orderBy('created_at','desc')),snap=>{
+    const newDocs=snap.docs.map(d=>normalizeDoc(d.id,d.data())).filter(belongsToClient);
     newDocs.forEach(e=>{e._collection='signalements';});
     allSignalements=allSignalements.filter(e=>e._collection==='events');
     allSignalements=[...newDocs,...allSignalements];
     sortAndRender();
-  },onSnapErr('signalements'));
+  });
 
-  // Collection "events" (legacy, obsolète) : plus lue. Le compteur "Incidents aujourd'hui"
-  // est calculé dans sortAndRender() à partir des signalements déjà filtrés par client.
+  unsubEvents=onSnapshot(query(collection(db,'events'),orderBy('create_at','desc')),snap=>{
+    const legacyDocs=snap.docs.map(d=>normalizeDoc(d.id,d.data())).filter(belongsToClient);
+    legacyDocs.forEach(e=>{e._collection='events';});
+    allSignalements=allSignalements.filter(e=>e._collection==='signalements');
+    allSignalements=[...allSignalements,...legacyDocs];
+    sortAndRender();
+  });
+
+  const today=new Date();today.setHours(0,0,0,0);
+  const todayTs=Timestamp.fromDate(today);
+  let tc1=0,tc2=0;
+  const upd=()=>document.getElementById('m-signalements').textContent=tc1+tc2;
+  onSnapshot(query(collection(db,'signalements'),where('created_at','>=',todayTs)),s=>{
+    tc1=s.docs.map(d=>d.data()).filter(belongsToClient).length;upd();
+  });
+  onSnapshot(query(collection(db,'events'),where('create_at','>=',todayTs)),s=>{
+    tc2=s.docs.map(d=>d.data()).filter(belongsToClient).length;upd();
+  });
 
   unsubLicences=onSnapshot(query(collection(db,'licences'),where('client_id','==',CLIENT_ID)),snap=>{
     allLicences=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderLicences();
-  },onSnapErr('licences'));
+  });
 
   setTimeout(()=>{
     watchCol('messages_global');
@@ -1143,8 +817,7 @@ function normalizeDoc(id,data){
   const ts=data.created_at||data.create_at||null;
   return{id,...data,_ts:ts,
     type:data.type||data.type_incident||'Signalement',
-      adresse:data.adresse||data.lieu||data.zone_nom||'-',
-               classe:data.zone_nom||data.lieu||null,
+    adresse:data.adresse||data.lieu||'—',
     user_email:data.user_email||data.userEmail||data.user_id||'—'
   };
 }
@@ -1193,9 +866,6 @@ window.setRapportFilter=function(filter,btn){
 
 // ── Render signalements ───────────────────────────────────────────────────────
 function sortAndRender(){
-  const _today=new Date();_today.setHours(0,0,0,0);
-  const _cnt=allSignalements.filter(e=>e._ts?.toMillis&&e._ts.toMillis()>=_today.getTime()).length;
-  const _mEl=document.getElementById('m-signalements');if(_mEl) _mEl.textContent=_cnt;
   allSignalements.sort((a,b)=>{
     const ta=a._ts?.toMillis?a._ts.toMillis():0;
     const tb=b._ts?.toMillis?b._ts.toMillis():0;
@@ -1302,9 +972,9 @@ function renderLicences(){
 window.revoquerLicence=async function(code){
   if(!confirm('Révoquer la licence '+code+' ?')) return;
   try{
-    await updateDoc(doc(db,'licences',code),{statut:'disponible',assigned_to:null,date_activation:null});
+    await adminFn('revokeLicence')({licenceId:code});
     toast('Licence révoquée','var(--green)');
-  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
+  }catch(e){toast('Erreur: '+(e.message||e.details),'var(--red)');}
 };
 
 // ── Détail modal ──────────────────────────────────────────────────────────────
@@ -1355,13 +1025,25 @@ window.deleteSignalement=async function(){
   if(!currentDetailId) return;
   const e=allSignalements.find(s=>s.id===currentDetailId.id);
   if(!confirm('Supprimer "'+((e&&e.type)||'ce signalement')+'" ? Irréversible.')) return;
-  try{await deleteDoc(doc(db,currentDetailId.col,currentDetailId.id));toast('Supprimé','var(--green)');window.closeDetailModal();}
-  catch(err){toast('Erreur: '+err.message,'var(--red)');}
+  try{
+    if(currentDetailId.col==='signalements'){
+      await adminFn('deleteSignalement')({sigId:currentDetailId.id});
+    } else {
+      await adminFn('deleteEvent')({eventId:currentDetailId.id});
+    }
+    toast('Supprimé','var(--green)');window.closeDetailModal();
+  }catch(err){toast('Erreur: '+err.message,'var(--red)');}
 };
 
 window.updateStatut=async function(eventId,col,statut){
-  try{await updateDoc(doc(db,col,eventId),{statut});toast('Statut → '+statut,'var(--green)');window.closeDetailModal();}
-  catch(e){toast('Erreur: '+e.message,'var(--red)');}
+  try{
+    if(col==='signalements'){
+      await adminFn('updateSignalementStatut')({sigId:eventId,statut});
+    } else {
+      await adminFn('updateEventStatut')({eventId,statut});
+    }
+    toast('Statut → '+statut,'var(--green)');window.closeDetailModal();
+  }catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 
 window.openPhotoModal=function(url){document.getElementById('photo-modal-img').src=url;document.getElementById('photo-modal').classList.add('active');};
@@ -1386,16 +1068,11 @@ window.createUser=async function(){
       btn.disabled=false;btn.textContent='+ Créer et attribuer une licence';
       return;
     }
-    const cred=await createUserWithEmailAndPassword2(authSecondary,email,password);
-    if(name) await updateProfile(cred.user,{displayName:name});
-    await authSecondary.signOut();
-    await setDoc(doc(db,'users',cred.user.uid),{
-      uid:cred.user.uid,email,displayName:name||email.split('@')[0],plan:'pro',role,
-      companyId:CLIENT_ID,client_id:CLIENT_ID,licence_code:licenceDisponible.id,
-      signalements_count:0,alertRadius:2000,notificationsEnabled:true,created_time:serverTimestamp()
+    const result=await adminFn('createUserWithProfile')({
+      email,password,displayName:name||email.split('@')[0],
+      role,companyId:CLIENT_ID,licenceId:licenceDisponible.id,plan:'pro'
     });
-    await updateDoc(doc(db,'licences',licenceDisponible.id),{statut:'active',assigned_to:cred.user.uid,date_activation:serverTimestamp()});
-    toast('Utilisateur créé — licence '+licenceDisponible.id+' attribuée','var(--green)');
+    toast('Utilisateur créé — licence '+licenceDisponible.id+' attribuée (uid: '+result.data.uid+')','var(--green)');
     status.textContent='✓ Créé';
     ['new-email','new-password','new-name'].forEach(id=>document.getElementById(id).value='');
     setTimeout(()=>status.textContent='',3000);
@@ -1497,23 +1174,23 @@ window.openDossierModal=function(userId){
 window.closeDossierModal=function(){document.getElementById('dossier-modal').classList.remove('active');};
 
 window.validerDossier=async function(userId){
-  try{await updateDoc(doc(db,'users',userId),{statut_dossier:'valide',valide_at:new Date()});toast('Dossier validé','var(--green)');window.closeDossierModal();}
+  try{await adminFn('updateUserProfile')({userId,fields:{statut_dossier:'valide',valide_at:new Date().toISOString()}});toast('Dossier validé','var(--green)');window.closeDossierModal();}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 window.refuserDossier=async function(userId){
   if(!confirm('Renvoyer en incomplet ?')) return;
-  try{await updateDoc(doc(db,'users',userId),{statut_dossier:'incomplet'});toast('Dossier renvoyé','var(--amber)');window.closeDossierModal();}
+  try{await adminFn('updateUserProfile')({userId,fields:{statut_dossier:'incomplet'}});toast('Dossier renvoyé','var(--amber)');window.closeDossierModal();}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 window.demanderElement=async function(userId){
   const element=prompt('Quel élément souhaitez-vous redemander ?\n(ex: CNI, photo de profil, justificatif domicile)');
   if(!element) return;
-  try{await updateDoc(doc(db,'users',userId),{statut_dossier:'soumis',element_demande:element,demande_at:new Date()});toast('Demande envoyée','var(--amber)');window.closeDossierModal();}
+  try{await adminFn('updateUserProfile')({userId,fields:{statut_dossier:'soumis',element_demande:element,demande_at:new Date().toISOString()}});toast('Demande envoyée','var(--amber)');window.closeDossierModal();}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 window.deleteUser=async function(userId,email){
   if(!confirm('Supprimer '+email+' ? Irréversible.')) return;
-  try{await deleteDoc(doc(db,'users',userId));toast('Utilisateur supprimé','var(--green)');window.closeDossierModal();}
+  try{await adminFn('deleteUserAccount')({userId});toast('Utilisateur supprimé','var(--green)');window.closeDossierModal();}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 window.openEditUser=function(userId){
@@ -1531,7 +1208,7 @@ window.saveEditUser=async function(){
   const plan=document.getElementById('edit-plan').value;
   const role=document.getElementById('edit-role').value;
   const company=document.getElementById('edit-company').value.trim();
-  try{await updateDoc(doc(db,'users',currentEditUserId),{plan,role,companyId:company});toast('Mis à jour','var(--green)');window.closeEditModal();}
+  try{await adminFn('updateUserProfile')({userId:currentEditUserId,fields:{plan,role,companyId:company,client_id:company}});toast('Mis à jour','var(--green)');window.closeEditModal();}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 
@@ -1540,8 +1217,8 @@ window.openChatConv=function(col,name){
   chatConv=col;chatConvName=name;
   document.getElementById('chat-conv-label').textContent='→ '+name;
   if(unsubChat) unsubChat();
-  unsubChat=onSnapshot(query(collection(db,col),where('client_id','==',CLIENT_ID)),snap=>{
-    const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>_msgTs(a)-_msgTs(b));
+  unsubChat=onSnapshot(query(collection(db,col),orderBy('created_at')),snap=>{
+    const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(belongsToClient);
     renderChatMessages(msgs);
   });
 };
@@ -1553,7 +1230,8 @@ function renderChatMessages(msgs){
     return;
   }
   c.innerHTML=msgs.map(m=>{
-    const isMine=m.sender_id===ME.id;
+    const myUid=auth.currentUser?.uid||ME.id;
+    const isMine=m.sender_id===myUid;
     const ts=m.created_at||m.create_at;
     const h=ts?.toDate?ts.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
     if(m.type==='system') return`<div class="chat-msg system">${m.contenu}</div>`;
@@ -1577,20 +1255,20 @@ window.sendChatMsg=async function(){
   const txt=input?.value?.trim();
   if(!txt) return;
   input.value='';
-  try{await addDoc(collection(db,chatConv),{contenu:txt,type:'normal',sender_id:ME.id,sender_nom:ME.nom,client_id:CLIENT_ID,created_at:serverTimestamp()});}
+  try{await addDoc(collection(db,chatConv),{contenu:txt,type:'normal',sender_id:auth.currentUser?.uid||ME.id,sender_nom:ME.nom,client_id:CLIENT_ID,created_at:serverTimestamp()});}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 window.sendUrgentChat=async function(){
   const input=document.getElementById('chat-input');
   const txt=input?.value?.trim()||'ALERTE URGENCE';
   input&&(input.value='');
-  try{await addDoc(collection(db,chatConv),{contenu:txt,type:'urgent',sender_id:ME.id,sender_nom:ME.nom,client_id:CLIENT_ID,created_at:serverTimestamp()});}
+  try{await addDoc(collection(db,chatConv),{contenu:txt,type:'urgent',sender_id:auth.currentUser?.uid||ME.id,sender_nom:ME.nom,client_id:CLIENT_ID,created_at:serverTimestamp()});}
   catch(e){toast('Erreur: '+e.message,'var(--red)');}
 };
 
 let lastMsgIds=new Set(),notifCount=0,notifsEnabled=true;
 function showNotifPopup(msg){
-  if(msg.sender_id===ME.id||!notifsEnabled) return;
+  if(msg.sender_id===(auth.currentUser?.uid||ME.id)||!notifsEnabled) return;
   const stack=document.getElementById('notif-stack');
   const isUrgent=msg.type==='urgent';
   const sender=msg.sender_nom||'Agent';
@@ -1628,20 +1306,18 @@ window.toggleNotifs=function(){
 };
 window.closeNotif=function(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('show');setTimeout(()=>el.remove(),300);};
 
-function _msgTs(m){const t=m.created_at||m.create_at;return t?.toMillis?t.toMillis():Date.now();}
 const watchedCols=new Set();
-const watchedUnsubs=[];
 function watchCol(col){
   if(watchedCols.has(col)) return;
   watchedCols.add(col);
-  const unsub=onSnapshot(query(collection(db,col),where('client_id','==',CLIENT_ID)),snap=>{
-    const docs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>_msgTs(b)-_msgTs(a));
-    docs.slice(0,1).forEach(msg=>{
+  onSnapshot(query(collection(db,col),orderBy('created_at','desc')),snap=>{
+    snap.docs.slice(0,1).forEach(d=>{
+      const msg={id:d.id,...d.data()};
+      if(!belongsToClient(msg)) return;
       if(!lastMsgIds.has(msg.id)&&lastMsgIds.size>0) showNotifPopup(msg);
       lastMsgIds.add(msg.id);
     });
   });
-  watchedUnsubs.push(unsub);
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -1650,39 +1326,7 @@ window.showTab=function(tab,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   el.classList.add('active');
-  if(tab==='carte'&&window.gmapFull){setTimeout(()=>{google.maps.event.trigger(window.gmapFull,'resize');window.gmapFull.setCenter({lat:46.6,lng:2.3});},100);}
-  if(tab==='zones'&&CURRENT_PRODUCT.key==='flowsite') loadZones();
-};
-
-// ── Export Excel ─────────────────────────────────────────────────────────────
-window.exportExcel=function(){
-  const complets=allSignalements.filter(e=>e.type&&e.type!=='Signalement');
-  let filtered=complets;
-  if(_rapportFilter==='faible') filtered=complets.filter(e=>(e.severity||e.niveau||0)===1);
-  else if(_rapportFilter==='moyen') filtered=complets.filter(e=>(e.severity||e.niveau||0)===2);
-  else if(_rapportFilter==='eleve') filtered=complets.filter(e=>(e.severity||e.niveau||0)===3);
-
-  const rows=filtered.map(e=>{
-    const ts=e._ts;
-    const dt=ts?.toDate?ts.toDate():null;
-    const sev=e.severity||e.niveau||0;
-    return{
-      Date:dt?dt.toLocaleDateString('fr-FR'):'',
-      Heure:dt?dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
-      Type:e.type||'',
-      Gravité:sevLabels[sev]||'',
-      Lieu:e.adresse||e.lieu||e.zone_nom||'',
-      Collaborateur:e.user_email||'',
-      Description:e.description||'',
-      Statut:e.statut==='resolu'?'Résolu':e.statut==='en_cours'?'En cours':'Ouvert'
-    };
-  });
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:12},{wch:8},{wch:24},{wch:12},{wch:28},{wch:30},{wch:50},{wch:12}];
-  XLSX.utils.book_append_sheet(wb,ws,'Signalements');
-  XLSX.writeFile(wb,CURRENT_PRODUCT.key+'_rapport_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  toast('Excel exporté','var(--green)');
+  if(tab==='carte'&&gmapFull){setTimeout(()=>{google.maps.event.trigger(gmapFull,'resize');gmapFull.setCenter({lat:46.6,lng:2.3});},100);}
 };
 
 // ── Export PDF ────────────────────────────────────────────────────────────────
@@ -1720,7 +1364,7 @@ window.exportPDF=function(){
     d.text(e.statut==='resolu'?'Resolu':'Ouvert',260,y);
     y+=7;d.line(20,y-2,277,y-2);
   });
-  d.save(CURRENT_PRODUCT.key+'_rapport_'+new Date().toISOString().slice(0,10)+'.pdf');
+  d.save('flowalert_rapport_'+new Date().toISOString().slice(0,10)+'.pdf');
   toast('PDF exporté','var(--green)');
 };
 </script>
